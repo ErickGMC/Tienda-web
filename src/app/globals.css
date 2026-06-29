@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 
+ * Feedback visual global para clicks
+ * Esto aplica un efecto de "hundimiento" a todos los botones e interacciones
+ */
+button, 
+a, 
+[role="button"],
+input[type="submit"],
+.clickable {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), filter 0.1s ease-in-out;
+}
+
+button:not(:disabled):active, 
+a:not([aria-disabled="true"]):active, 
+[role="button"]:not([aria-disabled="true"]):active,
+input[type="submit"]:not(:disabled):active,
+.clickable:active {
+  transform: scale(0.96);
+  filter: brightness(0.9);
+}
