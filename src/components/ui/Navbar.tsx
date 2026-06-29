@@ -26,15 +26,26 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
         
-        {/* Logo Section */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="p-2 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl text-white shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all duration-300">
-            <Store className="w-6 h-6" />
-          </div>
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 hidden sm:block">
-            Minimarket Flor
-          </span>
-        </Link>
+        {/* Logo Section & Navigation */}
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="p-2 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl text-white shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all duration-300">
+              <Store className="w-6 h-6" />
+            </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 hidden sm:block">
+              Minimarket Flor
+            </span>
+          </Link>
+          
+          <nav className="hidden md:flex items-center gap-4">
+            <Link href="/" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">
+              Catálogo
+            </Link>
+            <Link href="/nosotros" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">
+              Nuestra Tienda
+            </Link>
+          </nav>
+        </div>
 
         {/* Search Bar Section */}
         <div className="flex-1 max-w-2xl min-w-0">

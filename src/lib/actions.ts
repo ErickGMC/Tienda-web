@@ -22,6 +22,11 @@ export interface WebConfig {
   whatsapp?: string;
   ubicacion?: string;
   mostrarPrecios?: boolean;
+  nombreTienda?: string;
+  descripcionTienda?: string;
+  mapaIframe?: string;
+  horarioAtencion?: string;
+  emailContacto?: string;
 }
 
 function mapFirestoreProduct(doc: any): Producto {
