@@ -8,6 +8,12 @@ export default function InfoModal() {
 
   if (!isInfoModalOpen) return null
 
+  const savedWhatsapp = typeof window !== 'undefined' ? localStorage.getItem('tienda_whatsapp') : null;
+  const savedUbicacion = typeof window !== 'undefined' ? localStorage.getItem('tienda_ubicacion') : null;
+  
+  const whatsappFormateado = savedWhatsapp ? `+${savedWhatsapp.slice(0, 2)} ${savedWhatsapp.slice(2)}` : '+51 970560023';
+  const ubicacion = savedUbicacion || 'Av. Principal 123, Ciudad (Reemplazar con tu dirección)';
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
@@ -46,7 +52,7 @@ export default function InfoModal() {
               <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-slate-900 dark:text-slate-300">Ubicación</p>
-                <p className="text-sm">Av. Principal 123, Ciudad (Reemplazar con tu dirección)</p>
+                <p className="text-sm">{ubicacion}</p>
               </div>
             </div>
 
@@ -54,7 +60,7 @@ export default function InfoModal() {
               <Phone className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-slate-900 dark:text-slate-300">Contacto Directo</p>
-                <p className="text-sm">+51 970560023</p>
+                <p className="text-sm">{whatsappFormateado}</p>
               </div>
             </div>
           </div>

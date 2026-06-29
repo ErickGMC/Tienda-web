@@ -21,5 +21,6 @@ export interface Producto {
   disponible: boolean;
   destacado: boolean; // Para mostrar en la pantalla principal o hero
   etiquetas: string[]; // Ej: ["desayuno", "rapido", "caliente"]
+  stock?: number;
   // futuro_campo_ia: vector[] (Para búsqueda semántica con embeddings)
 }

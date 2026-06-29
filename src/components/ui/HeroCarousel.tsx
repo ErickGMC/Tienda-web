@@ -7,54 +7,17 @@ import { Store, Tag, Utensils } from 'lucide-react'
 import Image from 'next/image'
 import { useTiendaStore } from '@/lib/store'
 
-// Tipos temporales (luego vendrán de Firebase)
-type SlideData = {
-  id: string
-  title: string
-  subtitle: string
-  image: string
-  badgeText: string
-  badgeIcon: React.ReactNode
-  ctaText: string
-  ctaActionCategory?: string
-  gradient: string
-}
+import { Banner } from '@/lib/actions'
 
-const SLIDES: SlideData[] = [
-  {
-    id: '1',
-    title: 'Frescura y Calidad a tu alcance',
-    subtitle: 'Todo lo que tu hogar necesita, al mejor precio y más cerca de ti.',
-    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop', // Verduras frescas
-    badgeText: 'Bienvenido',
-    badgeIcon: <Store className="w-4 h-4" />,
-    ctaText: 'Ver Catálogo',
-    gradient: 'from-emerald-900/80 to-slate-900/80',
-  },
-  {
-    id: '2',
-    title: '¡Ofertas de Fin de Semana!',
-    subtitle: 'Aprovecha los descuentos en abarrotes y artículos de limpieza.',
-    image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?q=80&w=2574&auto=format&fit=crop', // Supermercado
-    badgeText: 'Promoción',
-    badgeIcon: <Tag className="w-4 h-4" />,
-    ctaText: 'Ver Ofertas',
-    gradient: 'from-amber-900/80 to-slate-900/80',
-  },
-  {
-    id: '3',
-    title: 'Menú del Día',
-    subtitle: 'Comida casera, caliente y deliciosa lista para disfrutar.',
-    image: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=2670&auto=format&fit=crop', // Comida
-    badgeText: 'Servicios',
-    badgeIcon: <Utensils className="w-4 h-4" />,
-    ctaText: 'Ver Menú',
-    ctaActionCategory: 'Servicios',
-    gradient: 'from-rose-900/80 to-slate-900/80',
-  }
-]
+const GRADIENTS = [
+  'from-emerald-900/80 to-slate-900/80',
+  'from-amber-900/80 to-slate-900/80',
+  'from-rose-900/80 to-slate-900/80',
+  'from-indigo-900/80 to-slate-900/80',
+  'from-purple-900/80 to-slate-900/80'
+];
 
-export default function HeroCarousel() {
+export default function HeroCarousel({ banners }: { banners: Banner[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
     Autoplay({ delay: 5000, stopOnInteraction: true })
   ])
@@ -69,6 +32,17 @@ export default function HeroCarousel() {
     }
   }
 
+  const getBadgeIcon = (category?: string) => {
+    switch (category) {
+      case 'Servicios':
+        return <Utensils className="w-4 h-4" />;
+      case 'Abarrotes':
+        return <Store className="w-4 h-4" />;
+      default:
+        return <Tag className="w-4 h-4" />;
+    }
+  }
+
   return (
     <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl mb-8 sm:mb-12 group h-[250px] sm:h-[400px] md:h-[500px]">
       
@@ -80,23 +54,23 @@ export default function HeroCarousel() {
 
       <div className="overflow-hidden h-full" ref={emblaRef}>
         <div className="flex h-full">
-          {SLIDES.map((slide) => (
+          {banners.map((slide, idx) => (
             <div className="relative flex-[0_0_100%] h-full min-w-0" key={slide.id}>
               
               {/* Imagen de Fondo */}
               <div className="absolute inset-0 w-full h-full">
                 <Image 
-                  src={slide.image}
+                  src={slide.imageUrl}
                   alt={slide.title}
                   fill
                   sizes="100vw"
                   className="object-cover"
-                  priority={slide.id === '1'}
+                  priority={idx === 0}
                 />
               </div>
 
-              {/* Overlay con Gradiente (Mejora la legibilidad) */}
-              <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient} mix-blend-multiply`} />
+              {/* Overlay con Gradiente */}
+              <div className={`absolute inset-0 bg-gradient-to-r ${GRADIENTS[idx % GRADIENTS.length]} mix-blend-multiply`} />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
 
               {/* Contenido del Slide */}
@@ -104,25 +78,29 @@ export default function HeroCarousel() {
                 <div className="max-w-2xl transform transition-transform duration-700 translate-y-0 opacity-100">
                   
                   {/* Badge */}
-                  <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-sm font-semibold mb-2 sm:mb-4 border border-white/30">
-                    {slide.badgeIcon}
-                    {slide.badgeText}
-                  </div>
+                  {slide.badgeText && (
+                    <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-sm font-semibold mb-2 sm:mb-4 border border-white/30">
+                      {getBadgeIcon(slide.ctaActionCategory)}
+                      {slide.badgeText}
+                    </div>
+                  )}
 
                   {/* Título y Subtítulo */}
                   <h1 className="text-2xl sm:text-4xl md:text-6xl font-extrabold text-white mb-2 sm:mb-4 leading-tight drop-shadow-lg">
                     {slide.title}
                   </h1>
-                  <p className="text-sm sm:text-lg md:text-xl text-slate-200 mb-4 sm:mb-8 max-w-xl drop-shadow-md line-clamp-2">
-                    {slide.subtitle}
-                  </p>
+                  {slide.subtitle && (
+                    <p className="text-sm sm:text-lg md:text-xl text-slate-200 mb-4 sm:mb-8 max-w-xl drop-shadow-md line-clamp-2">
+                      {slide.subtitle}
+                    </p>
+                  )}
 
                   {/* Botón CTA */}
                   <button 
                     onClick={() => handleCta(slide.ctaActionCategory)}
                     className="px-6 py-2 sm:px-8 sm:py-3.5 bg-white text-slate-900 hover:bg-emerald-500 hover:text-white rounded-full font-bold transition-all duration-300 shadow-xl shadow-black/20 transform hover:-translate-y-1 text-xs sm:text-base"
                   >
-                    {slide.ctaText}
+                    {slide.ctaText || 'Ver más'}
                   </button>
                 </div>
               </div>
@@ -133,22 +111,24 @@ export default function HeroCarousel() {
       </div>
 
       {/* Controles del Carrusel */}
-      <div className="absolute bottom-6 right-6 z-20 flex gap-2">
-        <button 
-          onClick={() => emblaApi?.scrollPrev()}
-          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
-          aria-label="Anterior"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <button 
-          onClick={() => emblaApi?.scrollNext()}
-          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
-          aria-label="Siguiente"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-        </button>
-      </div>
+      {banners.length > 1 && (
+        <div className="absolute bottom-6 right-6 z-20 flex gap-2">
+          <button 
+            onClick={() => emblaApi?.scrollPrev()}
+            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
+            aria-label="Anterior"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <button 
+            onClick={() => emblaApi?.scrollNext()}
+            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
+            aria-label="Siguiente"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+      )}
 
     </div>
   )

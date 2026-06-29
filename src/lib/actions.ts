@@ -1,80 +1,148 @@
 import { unstable_cache } from 'next/cache';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
 import { db } from './firebase/config';
-import { Product } from '@/types';
+import { Producto } from '@/types/producto';
 
-// Revalidar cada 3600 segundos (1 hora)
-const REVALIDATE_TIME = 3600;
+// Revalidar cada 60 segundos para tener cambios casi en tiempo real en la web
+const REVALIDATE_TIME = 60;
 
-export const getFeaturedProducts = unstable_cache(
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl: string;
+  badgeText?: string;
+  ctaText?: string;
+  ctaActionCategory?: string;
+  active: boolean;
+  priority: number;
+}
+
+export interface WebConfig {
+  whatsapp?: string;
+  ubicacion?: string;
+  mostrarPrecios?: boolean;
+}
+
+function mapFirestoreProduct(doc: any): Producto {
+  const data = doc.data();
+  
+  let etiquetasArr: string[] = [];
+  if (data.etiquetas) {
+    if (Array.isArray(data.etiquetas)) {
+      etiquetasArr = data.etiquetas;
+    } else if (typeof data.etiquetas === 'string') {
+      try {
+        etiquetasArr = JSON.parse(data.etiquetas);
+      } catch (e) {
+        etiquetasArr = data.etiquetas.split(',').map((s: string) => s.trim());
+      }
+    }
+  }
+
+  return {
+    id: doc.id,
+    codigoBarras: data.codigoBarras || '',
+    nombre: data.nombre || '',
+    descripcion: data.descripcion || '',
+    categoria: data.categoria || 'Otros',
+    precio: Number(data.precio) || 0,
+    unidadMedida: data.unidadMedida || 'unidad',
+    imagenUrl: data.imagenUrl || '',
+    disponible: data.disponible === true || data.disponible === 1 || data.disponible === '1',
+    destacado: data.destacado === true || data.destacado === 1 || data.destacado === '1',
+    etiquetas: etiquetasArr
+  };
+}
+
+function mapFirestoreBanner(doc: any): Banner {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    title: data.title || '',
+    subtitle: data.subtitle || '',
+    imageUrl: data.imageUrl || '',
+    badgeText: data.badgeText || '',
+    ctaText: data.ctaText || 'Ver más',
+    ctaActionCategory: data.ctaActionCategory || 'Todas',
+    active: data.active === true || data.active === 1 || data.active === '1',
+    priority: Number(data.priority) || 0
+  };
+}
+
+// Obtener todos los productos activos
+export const getProductosActivos = unstable_cache(
   async () => {
     try {
-      const snapshot = await getDocs(collection(db, 'products'));
-      if (snapshot.empty) return getMockProducts();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
+      const snapshot = await getDocs(collection(db, 'productos'));
+      if (snapshot.empty) return [];
+      
+      return snapshot.docs
+        .map(mapFirestoreProduct)
+        .filter(p => p.disponible);
     } catch (error) {
-      console.error("Error fetching from Firebase, returning mock", error);
-      return getMockProducts();
+      console.error("Error fetching productos from Firebase:", error);
+      return [];
     }
   },
-  ['featured-products'],
-  { revalidate: REVALIDATE_TIME, tags: ['products'] }
+  ['productos-activos'],
+  { revalidate: REVALIDATE_TIME, tags: ['productos'] }
 );
 
-export const getProductById = unstable_cache(
+// Obtener un producto por ID
+export const getProductoById = unstable_cache(
   async (id: string) => {
     try {
-      const docRef = doc(db, 'products', id);
+      const docRef = doc(db, 'productos', id);
       const docSnap = await getDoc(docRef);
       if (!docSnap.exists()) {
-         return getMockProducts().find(p => p.id === id) || null;
+        return null;
       }
-      return { id: docSnap.id, ...docSnap.data() } as Product;
-    } catch(error) {
-      console.error("Error fetching product, returning mock", error);
-      return getMockProducts().find(p => p.id === id) || null;
+      return mapFirestoreProduct(docSnap);
+    } catch (error) {
+      console.error("Error fetching product by id:", error);
+      return null;
     }
   },
-  ['product-detail'], 
+  ['producto-detalle'],
   { revalidate: REVALIDATE_TIME }
 );
 
-// Fallback data for demonstration without a populated Firebase database
-function getMockProducts(): Product[] {
-  return [
-    {
-      id: "prod-1",
-      title: "Auriculares Inalámbricos Premium",
-      slug: "auriculares-premium",
-      description: "Experimenta el sonido de alta fidelidad con cancelación de ruido activa.",
-      price: 199.99,
-      currency: "USD",
-      images: [{ url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80", alt: "Auriculares" }],
-      categoryId: "audio",
-      tags: ["audio", "inalambrico", "premium"],
-      metadata_vector: [],
-      view_count: 1500,
-      stock: 45,
-      isFeatured: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: "prod-2",
-      title: "Reloj Inteligente Serie X",
-      slug: "reloj-serie-x",
-      description: "Tu compañero perfecto para fitness y notificaciones diarias.",
-      price: 249.50,
-      currency: "USD",
-      images: [{ url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&q=80", alt: "Reloj inteligente" }],
-      categoryId: "wearables",
-      tags: ["reloj", "fitness", "tecnologia"],
-      metadata_vector: [],
-      view_count: 3200,
-      stock: 12,
-      isFeatured: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
+// Obtener los banners del carrusel ordenados por prioridad
+export const getBannersActivos = unstable_cache(
+  async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'banners'));
+      if (snapshot.empty) return [];
+
+      return snapshot.docs
+        .map(mapFirestoreBanner)
+        .filter(b => b.active)
+        .sort((a, b) => a.priority - b.priority);
+    } catch (error) {
+      console.error("Error fetching banners from Firebase:", error);
+      return [];
     }
-  ];
-}
+  },
+  ['banners-activos'],
+  { revalidate: REVALIDATE_TIME, tags: ['banners'] }
+);
+
+// Obtener configuración general de la tienda
+export const getWebConfig = unstable_cache(
+  async () => {
+    try {
+      const docRef = doc(db, 'web_config', 'general');
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        return { whatsapp: '51970560023', ubicacion: 'Av. Principal 123', mostrarPrecios: false };
+      }
+      return docSnap.data() as WebConfig;
+    } catch (error) {
+      console.error("Error fetching web config from Firebase:", error);
+      return { whatsapp: '51970560023', ubicacion: 'Av. Principal 123', mostrarPrecios: false };
+    }
+  },
+  ['web-config-general'],
+  { revalidate: REVALIDATE_TIME, tags: ['web_config'] }
+);

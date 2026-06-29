@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getProductById } from "@/lib/actions";
+import { getProductoById } from "@/lib/actions";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -8,38 +8,39 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const resolvedParams = await params;
-  const product = await getProductById(resolvedParams.id);
+  const product = await getProductoById(resolvedParams.id);
   if (!product) return { title: 'Producto no encontrado' };
 
   return {
-    title: `${product.title} | Mi Tienda`,
-    description: product.description.slice(0, 160),
+    title: `${product.nombre} | Minimarket Flor`,
+    description: product.descripcion?.slice(0, 160) || '',
     openGraph: {
-      images: [product.images[0]?.url],
+      images: [product.imagenUrl],
     }
   };
 }
 
 export default async function ProductPage({ params }: Props) {
   const resolvedParams = await params;
-  const product = await getProductById(resolvedParams.id);
+  const product = await getProductoById(resolvedParams.id);
 
   if (!product) {
     notFound();
   }
 
+  // Schema.org para SEO de producto
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "name": product.title,
-    "image": product.images.map(img => img.url),
-    "description": product.description,
+    "name": product.nombre,
+    "image": product.imagenUrl ? [product.imagenUrl] : [],
+    "description": product.descripcion,
     "offers": {
       "@type": "Offer",
-      "priceCurrency": product.currency,
-      "price": product.price,
+      "priceCurrency": "PEN",
+      "price": product.precio,
       "itemCondition": "https://schema.org/NewCondition",
-      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "availability": "https://schema.org/InStock",
     }
   };
 
@@ -52,44 +53,60 @@ export default async function ProductPage({ params }: Props) {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-inner">
-          <Image
-            src={product.images[0]?.url || '/placeholder.png'}
-            alt={product.images[0]?.alt || product.title}
-            fill
-            className="object-cover"
-            priority
-            sizes="(max-width: 768px) 100vw, 50vw"
-          />
+          {product.imagenUrl ? (
+            <Image
+              src={product.imagenUrl}
+              alt={product.nombre}
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center">
+              <span className="text-white font-bold text-6xl uppercase">
+                {product.nombre.substring(0, 2)}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col justify-center">
           <div className="flex gap-2 mb-4">
-            {product.tags?.map(tag => (
-              <span key={tag} className="text-xs font-medium tracking-wide uppercase bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1 rounded-full">
+            <span className="text-xs font-semibold tracking-wide uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 px-3 py-1 rounded-full">
+              {product.categoria}
+            </span>
+            {product.etiquetas?.map(tag => (
+              <span key={tag} className="text-xs font-medium tracking-wide uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 px-3 py-1 rounded-full">
                 {tag}
               </span>
             ))}
           </div>
           
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight mb-4">
-            {product.title}
+            {product.nombre}
           </h1>
           
-          <p className="text-3xl text-indigo-600 dark:text-indigo-400 font-bold mb-6">
-            {product.currency} ${product.price.toFixed(2)}
+          <p className="text-3xl text-emerald-600 dark:text-emerald-400 font-bold mb-6">
+            S/ {product.precio.toFixed(2)} <span className="text-sm font-normal text-slate-500">/ {product.unidadMedida}</span>
           </p>
           
-          <div className="prose prose-slate dark:prose-invert max-w-none mb-8">
-            <p>{product.description}</p>
-          </div>
+          {product.descripcion && (
+            <div className="prose prose-slate dark:prose-invert max-w-none mb-8">
+              <p>{product.descripcion}</p>
+            </div>
+          )}
 
           <div className="mt-auto">
-            <button className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white text-lg font-semibold py-4 px-10 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-              </svg>
-              Añadir al Carrito
-            </button>
+            <a 
+              href={`https://wa.me/51970560023?text=Hola,%20me%20interesa%20consultar%20por%20el%20producto:%20*${product.nombre}*`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white text-lg font-semibold py-4 px-10 rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>
+              Consultar por WhatsApp
+            </a>
           </div>
         </div>
       </div>

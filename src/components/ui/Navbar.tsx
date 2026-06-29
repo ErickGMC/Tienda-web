@@ -11,7 +11,8 @@ export default function Navbar() {
   const handleConsultarLista = () => {
     if (consultaList.length === 0) return;
     
-    const numero = "51970560023"; // 51 para Perú (asumiendo por los productos), puedes ajustarlo
+    const savedWhatsapp = typeof window !== 'undefined' ? localStorage.getItem('tienda_whatsapp') : null;
+    const numero = savedWhatsapp || "51970560023";
     let mensaje = "Hola, me interesa consultar el precio y disponibilidad de estos productos:%0A%0A";
     
     consultaList.forEach((p, index) => {
