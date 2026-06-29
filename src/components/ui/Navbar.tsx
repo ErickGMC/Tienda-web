@@ -6,13 +6,12 @@ import Link from 'next/link'
 import { useTiendaStore } from '@/lib/store'
 
 export default function Navbar() {
-  const { consultaList, setInfoModalOpen } = useTiendaStore();
+  const { consultaList, setInfoModalOpen, config, empresa } = useTiendaStore();
 
   const handleConsultarLista = () => {
     if (consultaList.length === 0) return;
     
-    const savedWhatsapp = typeof window !== 'undefined' ? localStorage.getItem('tienda_whatsapp') : null;
-    const numero = savedWhatsapp || "51970560023";
+    const numero = config?.whatsapp || "51970560023";
     let mensaje = "Hola, me interesa consultar el precio y disponibilidad de estos productos:%0A%0A";
     
     consultaList.forEach((p, index) => {
@@ -21,6 +20,8 @@ export default function Navbar() {
     
     window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
   };
+
+  const nombreComercial = empresa?.nombreComercial || config?.nombreTienda || "Minimarket Flor";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
@@ -33,7 +34,7 @@ export default function Navbar() {
               <Store className="w-6 h-6" />
             </div>
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 hidden sm:block">
-              Minimarket Flor
+              {nombreComercial}
             </span>
           </Link>
           

@@ -29,6 +29,15 @@ export interface WebConfig {
   emailContacto?: string;
 }
 
+export interface EmpresaConfig {
+  ruc?: string;
+  razonSocial?: string;
+  nombreComercial?: string;
+  direccionFiscal?: string;
+  telefono?: string;
+  leyenda?: string;
+}
+
 function mapFirestoreProduct(doc: any): Producto {
   const data = doc.data();
   
@@ -149,5 +158,32 @@ export const getWebConfig = unstable_cache(
     }
   },
   ['web-config-general'],
+  { revalidate: REVALIDATE_TIME, tags: ['web_config'] }
+);
+
+// Obtener datos formales de la empresa
+export const getEmpresaConfig = unstable_cache(
+  async () => {
+    try {
+      const docRef = doc(db, 'web_config', 'empresa');
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        return {
+          nombreComercial: 'Minimarket Flor',
+          direccionFiscal: 'Av. Principal 123',
+          telefono: '51970560023'
+        };
+      }
+      return docSnap.data() as EmpresaConfig;
+    } catch (error) {
+      console.error("Error fetching empresa config from Firebase:", error);
+      return {
+        nombreComercial: 'Minimarket Flor',
+        direccionFiscal: 'Av. Principal 123',
+        telefono: '51970560023'
+      };
+    }
+  },
+  ['web-config-empresa'],
   { revalidate: REVALIDATE_TIME, tags: ['web_config'] }
 );

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useEffect } from 'react';
 import { Producto, CategoriaProducto } from '@/types/producto';
-import { Banner, WebConfig } from '@/lib/actions';
+import { Banner, WebConfig, EmpresaConfig } from '@/lib/actions';
 import ProductCard from './ProductCard';
 import HeroCarousel from '@/components/ui/HeroCarousel';
 import { useTiendaStore } from '@/lib/store';
@@ -11,28 +11,24 @@ interface TiendaCatalogProps {
   productos: Producto[];
   banners: Banner[];
   config: WebConfig;
+  empresa: EmpresaConfig;
 }
 
 const CATEGORIAS: (CategoriaProducto | 'Todas')[] = [
   'Todas', 'Abarrotes', 'Frutas y Verduras', 'Limpieza', 'Bazar', 'Servicios', 'Otros'
 ];
 
-export default function TiendaCatalog({ productos, banners, config }: TiendaCatalogProps) {
-  const { searchQuery, selectedCategory, setSelectedCategory, setShowPrices } = useTiendaStore();
+export default function TiendaCatalog({ productos, banners, config, empresa }: TiendaCatalogProps) {
+  const { searchQuery, selectedCategory, setSelectedCategory, setShowPrices, setConfig } = useTiendaStore();
 
-  // Sincronizar la configuración general (mostrarPrecios) con el store en el cliente
+  // Sincronizar la configuración general
   useEffect(() => {
     if (config && config.mostrarPrecios !== undefined) {
       setShowPrices(config.mostrarPrecios);
     }
-    // Guardar el número de whatsapp en localStorage para que Navbar e InfoModal puedan leerlo
-    if (config && config.whatsapp) {
-      localStorage.setItem('tienda_whatsapp', config.whatsapp);
-    }
-    if (config && config.ubicacion) {
-      localStorage.setItem('tienda_ubicacion', config.ubicacion);
-    }
-  }, [config, setShowPrices]);
+    // Guardar configs globales en el store
+    setConfig(config || {}, empresa || {});
+  }, [config, empresa, setShowPrices, setConfig]);
 
   // Filtrado optimizado con useMemo
   const productosFiltrados = useMemo(() => {

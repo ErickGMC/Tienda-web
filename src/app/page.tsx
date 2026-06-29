@@ -1,4 +1,4 @@
-import { getProductosActivos, getBannersActivos, getWebConfig } from "@/lib/actions";
+import { getProductosActivos, getBannersActivos, getWebConfig, getEmpresaConfig } from "@/lib/actions";
 import TiendaCatalog from "@/components/productos/TiendaCatalog";
 
 export default async function Home() {
@@ -6,12 +6,14 @@ export default async function Home() {
   const productos = await getProductosActivos();
   const banners = await getBannersActivos();
   const config = await getWebConfig();
+  const empresa = await getEmpresaConfig();
 
   return (
     <TiendaCatalog 
       productos={productos} 
       banners={banners} 
       config={config} 
+      empresa={empresa}
     />
   );
 }

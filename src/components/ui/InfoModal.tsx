@@ -4,15 +4,14 @@ import { useTiendaStore } from '@/lib/store'
 import { X, MapPin, Phone, Info, Server } from 'lucide-react'
 
 export default function InfoModal() {
-  const { isInfoModalOpen, setInfoModalOpen } = useTiendaStore()
+  const { isInfoModalOpen, setInfoModalOpen, config, empresa } = useTiendaStore()
 
   if (!isInfoModalOpen) return null
-
-  const savedWhatsapp = typeof window !== 'undefined' ? localStorage.getItem('tienda_whatsapp') : null;
-  const savedUbicacion = typeof window !== 'undefined' ? localStorage.getItem('tienda_ubicacion') : null;
   
-  const whatsappFormateado = savedWhatsapp ? `+${savedWhatsapp.slice(0, 2)} ${savedWhatsapp.slice(2)}` : '+51 970560023';
-  const ubicacion = savedUbicacion || 'Av. Principal 123, Ciudad (Reemplazar con tu dirección)';
+  const telefonoStr = empresa?.telefono || config?.whatsapp || '51970560023';
+  const whatsappFormateado = `+${telefonoStr.slice(0, 2)} ${telefonoStr.slice(2)}`;
+  const ubicacion = empresa?.direccionFiscal || config?.ubicacion || 'Av. Principal 123, Ciudad (Reemplazar con tu dirección)';
+  const nombreComercial = empresa?.nombreComercial || config?.nombreTienda || 'Minimarket Flor';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
@@ -63,6 +62,15 @@ export default function InfoModal() {
                 <p className="text-sm">{whatsappFormateado}</p>
               </div>
             </div>
+            
+            {config?.mapaIframe && (
+              <div className="mt-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 h-48 w-full relative">
+                <div 
+                  className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
+                  dangerouslySetInnerHTML={{ __html: config.mapaIframe }} 
+                />
+              </div>
+            )}
           </div>
 
           {/* System Info */}

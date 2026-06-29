@@ -3,63 +3,66 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import InfoModal from "@/components/ui/InfoModal";
+import { getWebConfig, getEmpresaConfig } from "@/lib/actions";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: "Minimarket Flor | Catálogo y Tienda",
-  description: "Minimarket Flor: Encuentra abarrotes, frutas, verduras, servicios, y más cerca de ti. Precios justos y atención rápida por WhatsApp.",
-  keywords: ["minimarket cerca de mi", "abarrotes", "tienda", "minimarket flor", "compras", "delivery whatsapp", "frutas y verduras", "bodega"],
-  authors: [{ name: "Minimarket Flor" }],
-  openGraph: {
-    title: "Minimarket Flor | Tu tienda de confianza",
-    description: "Todo lo que necesitas, desde abarrotes frescos hasta servicios rápidos.",
-    url: "https://minimarket-flor.com", // Cambiar por el dominio final
-    siteName: "Minimarket Flor",
-    locale: "es_PE",
-    type: "website",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getWebConfig();
+  const empresa = await getEmpresaConfig();
+  
+  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
+  const desc = config.descripcionTienda || "Encuentra abarrotes, frutas, verduras, servicios, y más cerca de ti. Precios justos y atención rápida por WhatsApp.";
+
+  return {
+    title: `${nombre} | Catálogo y Tienda`,
+    description: desc,
+    keywords: ["minimarket", "abarrotes", "tienda", nombre.toLowerCase(), "compras", "delivery whatsapp", "bodega"],
+    authors: [{ name: nombre }],
+    openGraph: {
+      title: `${nombre} | Tu tienda de confianza`,
+      description: desc,
+      url: "https://minimarket-flor.com",
+      siteName: nombre,
+      locale: "es_PE",
+      type: "website",
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  }
-};
+    }
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const config = await getWebConfig();
+  const empresa = await getEmpresaConfig();
+  
+  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
+  const desc = config.descripcionTienda || "Minimarket local ofreciendo abarrotes, limpieza, bazar y más.";
+  const direccion = empresa.direccionFiscal || config.ubicacion || "Av. Principal 123";
+  const telefono = empresa.telefono || config.whatsapp || "51970560023";
+
   // Datos estructurados (Schema.org) para que Google y las IA entiendan qué es tu negocio y dónde está
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: 'Minimarket Flor',
-    description: 'Minimarket local ofreciendo abarrotes, limpieza, bazar, menú del día, recargas y más.',
-    image: 'https://minimarket-flor.com/logo.png', // Cambiar por tu logo
+    name: nombre,
+    description: desc,
+    image: 'https://minimarket-flor.com/logo.png', // idealmente config.logoUrl
     url: 'https://minimarket-flor.com',
-    telephone: '+51970560023',
+    telephone: `+${telefono}`,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Av. Principal 123', // TODO: Reemplazar con real
-      addressLocality: 'Tu Ciudad', // TODO: Reemplazar
-      addressRegion: 'Tu Región', // TODO: Reemplazar
-      addressCountry: 'PE' // PE = Perú
-    },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: -12.046374, // TODO: Reemplazar con tus coordenadas de Google Maps
-      longitude: -77.042793 // TODO: Reemplazar con tus coordenadas
+      streetAddress: direccion,
+      addressCountry: 'PE'
     },
     priceRange: 'S/',
     openingHoursSpecification: [
@@ -71,9 +74,6 @@ export default function RootLayout({
         opens: '07:00',
         closes: '22:00'
       }
-    ],
-    sameAs: [
-      // Enlaces a tus redes sociales si las tienes
     ]
   };
 

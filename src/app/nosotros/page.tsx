@@ -1,10 +1,11 @@
-import { getWebConfig } from "@/lib/actions";
+import { getWebConfig, getEmpresaConfig } from "@/lib/actions";
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart, Store } from "lucide-react";
 import Link from "next/link";
 
 export async function generateMetadata() {
   const config = await getWebConfig();
-  const nombre = config.nombreTienda || "Minimarket Flor";
+  const empresa = await getEmpresaConfig();
+  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
   return {
     title: `Nuestra Tienda | ${nombre}`,
     description: config.descripcionTienda || `Conoce más sobre ${nombre}. Ubicación, horarios de atención, contacto directo y mapa interactivo.`,
@@ -13,12 +14,13 @@ export async function generateMetadata() {
 
 export default async function NosotrosPage() {
   const config = await getWebConfig();
+  const empresa = await getEmpresaConfig();
 
-  const nombre = config.nombreTienda || "Minimarket Flor";
+  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
   const descripcion = config.descripcionTienda || "Tu tienda de confianza con los mejores productos para tu hogar.";
   const horario = config.horarioAtencion || "Lunes a Sábado: 8:00 AM - 10:00 PM\nDomingo: 9:00 AM - 6:00 PM";
-  const ubicacion = config.ubicacion || "Av. Principal 123, Ciudad";
-  const whatsapp = config.whatsapp || "51970560023";
+  const ubicacion = empresa.direccionFiscal || config.ubicacion || "Av. Principal 123, Ciudad";
+  const whatsapp = empresa.telefono || config.whatsapp || "51970560023";
   const email = config.emailContacto || "contacto@minimarketflor.com";
   const mapaUrl = config.mapaIframe || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3901.865912448375!2d-77.04537!3d-12.04637!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDAyJzQ2LjkiUyA3N8KwMDInNDMuMyJX!5e0!3m2!1ses!2spe!4v1650000000000!5m2!1ses!2spe";
 
@@ -134,16 +136,23 @@ export default async function NosotrosPage() {
             </h3>
             
             <div className="relative rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-1 min-h-[350px] border border-slate-100 dark:border-slate-800">
-              <iframe
-                src={mapaUrl}
-                width="100%"
-                height="100%"
-                style={{ border: 0, minHeight: "350px" }}
-                allowFullScreen={true}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="absolute inset-0 w-full h-full"
-              ></iframe>
+              {config.mapaIframe?.includes('<iframe') ? (
+                <div 
+                  className="absolute inset-0 w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
+                  dangerouslySetInnerHTML={{ __html: config.mapaIframe }} 
+                />
+              ) : (
+                <iframe
+                  src={mapaUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0, minHeight: "350px" }}
+                  allowFullScreen={true}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="absolute inset-0 w-full h-full"
+                ></iframe>
+              )}
             </div>
 
             <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-850">
