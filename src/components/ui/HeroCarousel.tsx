@@ -46,6 +46,23 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
   return (
     <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl mb-8 sm:mb-12 group aspect-[4/1] min-h-[150px]">
       
+      <div className="overflow-hidden h-full" ref={emblaRef}>
+        <div className="flex h-full">
+          {banners.map((slide, idx) => (
+            <div className="relative flex-[0_0_100%] h-full min-w-0" key={slide.id}>
+              
+              {/* Imagen de Fondo */}
+              <div className="absolute inset-0 w-full h-full">
+                <Image 
+                  src={slide.imageUrl}
+                  alt={slide.title}
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
+                  priority={idx === 0}
+                />
+              </div>
+
               {/* Mostrar overlay y contenido solo si hay algún texto */}
               {(slide.title || slide.subtitle || slide.badgeText || slide.ctaText) && (
                 <>
@@ -89,6 +106,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                   </div>
                 </>
               )}
+
 
             </div>
           ))}
