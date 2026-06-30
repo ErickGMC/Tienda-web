@@ -69,28 +69,27 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                 />
               </div>
 
-              {/* Overlay con Gradiente */}
-              <div className={`absolute inset-0 bg-gradient-to-r ${GRADIENTS[idx % GRADIENTS.length]} mix-blend-multiply`} />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+              {/* Overlay Ligero para que el texto sea legible sin oscurecer toda la imagen */}
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/30 to-transparent" />
 
               {/* Contenido del Slide */}
-              <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8 md:p-16 z-10">
-                <div className="max-w-2xl transform transition-transform duration-700 translate-y-0 opacity-100">
+              <div className="absolute inset-0 flex flex-col justify-center p-4 sm:p-8 md:px-12 z-10">
+                <div className="max-w-xl transform transition-transform duration-700 translate-y-0 opacity-100">
                   
                   {/* Badge */}
                   {slide.badgeText && (
-                    <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-sm font-semibold mb-2 sm:mb-4 border border-white/30">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-xs font-bold mb-2 border border-white/30 shadow-sm">
                       {getBadgeIcon(slide.ctaActionCategory)}
                       {slide.badgeText}
                     </div>
                   )}
 
                   {/* Título y Subtítulo */}
-                  <h1 className="text-2xl sm:text-4xl md:text-6xl font-extrabold text-white mb-2 sm:mb-4 leading-tight drop-shadow-lg">
+                  <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 leading-tight drop-shadow-md">
                     {slide.title}
                   </h1>
                   {slide.subtitle && (
-                    <p className="text-sm sm:text-lg md:text-xl text-slate-200 mb-4 sm:mb-8 max-w-xl drop-shadow-md line-clamp-2">
+                    <p className="text-xs sm:text-sm md:text-base text-slate-100 mb-4 max-w-md drop-shadow line-clamp-2">
                       {slide.subtitle}
                     </p>
                   )}
@@ -98,7 +97,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                   {/* Botón CTA */}
                   <button 
                     onClick={() => handleCta(slide.ctaActionCategory)}
-                    className="px-6 py-2 sm:px-8 sm:py-3.5 bg-white text-slate-900 hover:bg-emerald-500 hover:text-white rounded-full font-bold transition-all duration-300 shadow-xl shadow-black/20 transform hover:-translate-y-1 text-xs sm:text-base"
+                    className="px-5 py-2 sm:px-6 sm:py-2.5 bg-emerald-500 text-white hover:bg-emerald-400 rounded-full font-bold transition-all duration-300 shadow-lg shadow-emerald-500/30 transform hover:-translate-y-0.5 text-xs sm:text-sm"
                   >
                     {slide.ctaText || 'Ver más'}
                   </button>
