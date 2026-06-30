@@ -31,9 +31,9 @@ export default function ProductCard({ producto }: ProductCardProps) {
       
       {/* Image / Placeholder Area */}
       <div className="relative aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-        {producto.imagenUrl ? (
+        {(producto.thumbnailUrl || producto.imagenUrl) ? (
           <Image 
-            src={producto.imagenUrl} 
+            src={producto.thumbnailUrl || producto.imagenUrl || ''} 
             alt={producto.nombre}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"

@@ -44,7 +44,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
   }
 
   return (
-    <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl mb-8 sm:mb-12 group h-[250px] sm:h-[400px] md:h-[500px]">
+    <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl mb-8 sm:mb-12 group aspect-[4/1] min-h-[150px]">
       
       {/* Marca Fija - Para no perder el nombre de la tienda */}
       <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-white/20 shadow-lg">
