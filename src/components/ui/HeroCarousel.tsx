@@ -70,12 +70,12 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                   <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/30 to-transparent" />
 
                   {/* Contenido del Slide */}
-                  <div className="absolute inset-0 flex flex-col justify-center p-4 sm:p-8 md:px-12 z-10">
+                  <div className="absolute inset-0 flex flex-col justify-end sm:justify-center p-4 pb-2 sm:pb-8 sm:p-8 md:px-12 z-10">
                     <div className="max-w-xl transform transition-transform duration-700 translate-y-0 opacity-100">
                       
                       {/* Badge */}
                       {slide.badgeText && (
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-xs font-bold mb-2 border border-white/30 shadow-sm">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-xs font-bold mb-1 sm:mb-2 border border-white/30 shadow-sm">
                           {getBadgeIcon(slide.ctaActionCategory)}
                           {slide.badgeText}
                         </div>
@@ -83,24 +83,26 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
 
                       {/* Título y Subtítulo */}
                       {slide.title && (
-                        <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 leading-tight drop-shadow-md">
+                        <h1 className="text-lg sm:text-3xl md:text-4xl font-extrabold text-white mb-1 sm:mb-2 leading-tight drop-shadow-md">
                           {slide.title}
                         </h1>
                       )}
                       {slide.subtitle && (
-                        <p className="text-xs sm:text-sm md:text-base text-slate-100 mb-4 max-w-md drop-shadow line-clamp-2">
+                        <p className="text-[10px] sm:text-sm md:text-base text-slate-100 mb-2 sm:mb-4 max-w-md drop-shadow line-clamp-2">
                           {slide.subtitle}
                         </p>
                       )}
 
                       {/* Botón CTA */}
                       {slide.ctaText && (
-                        <button 
-                          onClick={() => handleCta(slide.ctaActionCategory)}
-                          className="px-5 py-2 sm:px-6 sm:py-2.5 bg-emerald-500 text-white hover:bg-emerald-400 rounded-full font-bold transition-all duration-300 shadow-lg shadow-emerald-500/30 transform hover:-translate-y-0.5 text-xs sm:text-sm"
-                        >
-                          {slide.ctaText}
-                        </button>
+                        <div className="mt-1 sm:mt-0">
+                          <button 
+                            onClick={() => handleCta(slide.ctaActionCategory)}
+                            className="px-4 py-1.5 sm:px-6 sm:py-2.5 bg-emerald-500 text-white hover:bg-emerald-400 rounded-full font-bold transition-all duration-300 shadow-lg shadow-emerald-500/30 transform hover:-translate-y-0.5 text-[10px] sm:text-sm"
+                          >
+                            {slide.ctaText}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -115,20 +117,20 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
 
       {/* Controles del Carrusel */}
       {banners.length > 1 && (
-        <div className="absolute bottom-6 right-6 z-20 flex gap-2">
+        <div className="absolute bottom-2 right-2 sm:bottom-6 sm:right-6 z-20 flex gap-1 sm:gap-2">
           <button 
             onClick={() => emblaApi?.scrollPrev()}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
+            className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
             aria-label="Anterior"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           </button>
           <button 
             onClick={() => emblaApi?.scrollNext()}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
+            className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
             aria-label="Siguiente"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
       )}
