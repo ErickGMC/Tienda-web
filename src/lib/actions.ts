@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { Producto } from '@/types/producto';
 
@@ -36,6 +36,11 @@ export interface EmpresaConfig {
   direccionFiscal?: string;
   telefono?: string;
   leyenda?: string;
+}
+
+export interface ComunidadConfig {
+  avisoGlobal?: string;
+  telefonos?: { id: string; nombre: string; numero: string }[];
 }
 
 function mapFirestoreProduct(doc: any): Producto {
@@ -188,3 +193,43 @@ export const getEmpresaConfig = unstable_cache(
   ['web-config-empresa'],
   { revalidate: REVALIDATE_TIME, tags: ['web_config'] }
 );
+
+// Obtener configuración comunitaria
+export const getComunidadConfig = unstable_cache(
+  async () => {
+    try {
+      const docRef = doc(db, 'web_config', 'comunidad');
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        return {
+          avisoGlobal: '',
+          telefonos: []
+        };
+      }
+      return docSnap.data() as ComunidadConfig;
+    } catch (error) {
+      console.error("Error fetching comunidad config from Firebase:", error);
+      return {
+        avisoGlobal: '',
+        telefonos: []
+      };
+    }
+  },
+  ['web-config-comunidad'],
+  { revalidate: REVALIDATE_TIME, tags: ['web_config'] }
+);
+
+// Registrar evento de Analytics (No usar cache aquí)
+export async function logAnalyticsEvent(type: 'pageview' | 'whatsapp_click', details: any = {}) {
+  try {
+    await addDoc(collection(db, 'analytics_events'), {
+      type,
+      ...details,
+      timestamp: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Error logging analytics event:", error);
+    return false;
+  }
+}

@@ -3,7 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import InfoModal from "@/components/ui/InfoModal";
-import { getWebConfig, getEmpresaConfig } from "@/lib/actions";
+import AnalyticsTracker from "@/components/ui/AnalyticsTracker";
+import { AvisoGlobal } from "@/components/ui/ComunidadSection";
+import { getWebConfig, getEmpresaConfig, getComunidadConfig } from "@/lib/actions";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,6 +46,7 @@ export default async function RootLayout({
 }>) {
   const config = await getWebConfig();
   const empresa = await getEmpresaConfig();
+  const comunidad = await getComunidadConfig();
   
   const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
   const desc = config.descripcionTienda || "Minimarket local ofreciendo abarrotes, limpieza, bazar y más.";
@@ -89,6 +92,8 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+        <AnalyticsTracker />
+        <AvisoGlobal comunidad={comunidad} />
         <Navbar />
         <InfoModal />
         <main className="flex-1 w-full relative">

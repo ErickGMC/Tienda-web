@@ -8,9 +8,20 @@ import { useTiendaStore } from '@/lib/store'
 export default function Navbar() {
   const { consultaList, setInfoModalOpen, config, empresa } = useTiendaStore();
 
-  const handleConsultarLista = () => {
+  const handleConsultarLista = async () => {
     if (consultaList.length === 0) return;
     
+    // Log analytics
+    try {
+      const { logAnalyticsEvent } = await import('@/lib/actions');
+      await logAnalyticsEvent('whatsapp_click', {
+        source: 'navbar_list',
+        itemCount: consultaList.length
+      });
+    } catch (e) {
+      console.warn('Analytics error', e);
+    }
+
     const numero = config?.whatsapp || "51970560023";
     let mensaje = "Hola, me interesa consultar el precio y disponibilidad de estos productos:%0A%0A";
     
