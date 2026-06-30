@@ -46,63 +46,49 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
   return (
     <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl mb-8 sm:mb-12 group aspect-[4/1] min-h-[150px]">
       
-      {/* Marca Fija - Para no perder el nombre de la tienda */}
-      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-white/20 shadow-lg">
-        <Store className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
-        <span className="font-bold text-white tracking-wide text-xs sm:text-base">MINIMARKET FLOR</span>
-      </div>
+              {/* Mostrar overlay y contenido solo si hay algún texto */}
+              {(slide.title || slide.subtitle || slide.badgeText || slide.ctaText) && (
+                <>
+                  {/* Overlay Ligero para que el texto sea legible sin oscurecer toda la imagen */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/30 to-transparent" />
 
-      <div className="overflow-hidden h-full" ref={emblaRef}>
-        <div className="flex h-full">
-          {banners.map((slide, idx) => (
-            <div className="relative flex-[0_0_100%] h-full min-w-0" key={slide.id}>
-              
-              {/* Imagen de Fondo */}
-              <div className="absolute inset-0 w-full h-full">
-                <Image 
-                  src={slide.imageUrl}
-                  alt={slide.title}
-                  fill
-                  sizes="100vw"
-                  className="object-cover"
-                  priority={idx === 0}
-                />
-              </div>
+                  {/* Contenido del Slide */}
+                  <div className="absolute inset-0 flex flex-col justify-center p-4 sm:p-8 md:px-12 z-10">
+                    <div className="max-w-xl transform transition-transform duration-700 translate-y-0 opacity-100">
+                      
+                      {/* Badge */}
+                      {slide.badgeText && (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-xs font-bold mb-2 border border-white/30 shadow-sm">
+                          {getBadgeIcon(slide.ctaActionCategory)}
+                          {slide.badgeText}
+                        </div>
+                      )}
 
-              {/* Overlay Ligero para que el texto sea legible sin oscurecer toda la imagen */}
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/30 to-transparent" />
+                      {/* Título y Subtítulo */}
+                      {slide.title && (
+                        <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 leading-tight drop-shadow-md">
+                          {slide.title}
+                        </h1>
+                      )}
+                      {slide.subtitle && (
+                        <p className="text-xs sm:text-sm md:text-base text-slate-100 mb-4 max-w-md drop-shadow line-clamp-2">
+                          {slide.subtitle}
+                        </p>
+                      )}
 
-              {/* Contenido del Slide */}
-              <div className="absolute inset-0 flex flex-col justify-center p-4 sm:p-8 md:px-12 z-10">
-                <div className="max-w-xl transform transition-transform duration-700 translate-y-0 opacity-100">
-                  
-                  {/* Badge */}
-                  {slide.badgeText && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-xs font-bold mb-2 border border-white/30 shadow-sm">
-                      {getBadgeIcon(slide.ctaActionCategory)}
-                      {slide.badgeText}
+                      {/* Botón CTA */}
+                      {slide.ctaText && (
+                        <button 
+                          onClick={() => handleCta(slide.ctaActionCategory)}
+                          className="px-5 py-2 sm:px-6 sm:py-2.5 bg-emerald-500 text-white hover:bg-emerald-400 rounded-full font-bold transition-all duration-300 shadow-lg shadow-emerald-500/30 transform hover:-translate-y-0.5 text-xs sm:text-sm"
+                        >
+                          {slide.ctaText}
+                        </button>
+                      )}
                     </div>
-                  )}
-
-                  {/* Título y Subtítulo */}
-                  <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 leading-tight drop-shadow-md">
-                    {slide.title}
-                  </h1>
-                  {slide.subtitle && (
-                    <p className="text-xs sm:text-sm md:text-base text-slate-100 mb-4 max-w-md drop-shadow line-clamp-2">
-                      {slide.subtitle}
-                    </p>
-                  )}
-
-                  {/* Botón CTA */}
-                  <button 
-                    onClick={() => handleCta(slide.ctaActionCategory)}
-                    className="px-5 py-2 sm:px-6 sm:py-2.5 bg-emerald-500 text-white hover:bg-emerald-400 rounded-full font-bold transition-all duration-300 shadow-lg shadow-emerald-500/30 transform hover:-translate-y-0.5 text-xs sm:text-sm"
-                  >
-                    {slide.ctaText || 'Ver más'}
-                  </button>
-                </div>
-              </div>
+                  </div>
+                </>
+              )}
 
             </div>
           ))}
