@@ -63,42 +63,39 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                 />
               </div>
 
-              {/* Mostrar overlay y contenido solo si hay algún texto */}
+              {/* Mostrar contenido solo si hay algún texto */}
               {(slide.title || slide.subtitle || slide.badgeText || slide.ctaText) && (
                 <>
-                  {/* Overlay Ligero para que el texto sea legible sin oscurecer toda la imagen */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/30 to-transparent" />
-
                   {/* Contenido del Slide */}
-                  <div className="absolute inset-0 flex flex-col justify-end sm:justify-center p-4 pb-2 sm:pb-8 sm:p-8 md:px-12 z-10">
-                    <div className="max-w-xl transform transition-transform duration-700 translate-y-0 opacity-100">
+                  <div className="absolute inset-0 flex flex-col justify-end sm:justify-center p-4 pb-2 sm:pb-8 sm:p-8 md:px-12 z-10 pointer-events-none">
+                    <div className="max-w-xl transform transition-transform duration-700 translate-y-0 opacity-100 pointer-events-auto">
                       
                       {/* Badge */}
                       {slide.badgeText && (
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-[10px] sm:text-xs font-bold mb-1 sm:mb-2 border border-white/30 shadow-sm">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 text-white backdrop-blur-md text-[10px] sm:text-xs font-bold mb-1 sm:mb-2 border border-white/20 shadow-lg">
                           {getBadgeIcon(slide.ctaActionCategory)}
                           {slide.badgeText}
                         </div>
                       )}
 
-                      {/* Título y Subtítulo */}
+                      {/* Título y Subtítulo (con sombra fuerte para resaltar sin oscurecer fondo) */}
                       {slide.title && (
-                        <h1 className="text-lg sm:text-3xl md:text-4xl font-extrabold text-white mb-1 sm:mb-2 leading-tight drop-shadow-md">
+                        <h1 className="text-lg sm:text-3xl md:text-4xl font-extrabold text-white mb-1 sm:mb-2 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                           {slide.title}
                         </h1>
                       )}
                       {slide.subtitle && (
-                        <p className="text-[10px] sm:text-sm md:text-base text-slate-100 mb-2 sm:mb-4 max-w-md drop-shadow line-clamp-2">
+                        <p className="text-[10px] sm:text-sm md:text-base text-slate-100 mb-2 sm:mb-4 max-w-md drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-2">
                           {slide.subtitle}
                         </p>
                       )}
 
                       {/* Botón CTA */}
                       {slide.ctaText && (
-                        <div className="mt-1 sm:mt-0">
+                        <div className="mt-1 sm:mt-0 inline-block">
                           <button 
                             onClick={() => handleCta(slide.ctaActionCategory)}
-                            className="px-4 py-1.5 sm:px-6 sm:py-2.5 bg-emerald-500 text-white hover:bg-emerald-400 rounded-full font-bold transition-all duration-300 shadow-lg shadow-emerald-500/30 transform hover:-translate-y-0.5 text-[10px] sm:text-sm"
+                            className="px-4 py-1.5 sm:px-6 sm:py-2.5 bg-emerald-500 text-white hover:bg-emerald-400 rounded-full font-bold transition-all duration-300 shadow-lg shadow-emerald-500/50 transform hover:-translate-y-0.5 text-[10px] sm:text-sm border border-emerald-400"
                           >
                             {slide.ctaText}
                           </button>
@@ -120,17 +117,17 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
         <div className="absolute bottom-2 right-2 sm:bottom-6 sm:right-6 z-20 flex gap-1 sm:gap-2">
           <button 
             onClick={() => emblaApi?.scrollPrev()}
-            className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
+            className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20 shadow-lg"
             aria-label="Anterior"
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           </button>
           <button 
             onClick={() => emblaApi?.scrollNext()}
-            className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20"
+            className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20 shadow-lg"
             aria-label="Siguiente"
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
       )}
