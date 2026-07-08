@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tienda Web (Cliente)
 
-## Getting Started
+Esta es la tienda pública en línea (e-commerce) para el sistema POS Minimarket Flor. Está construida con **Next.js** y se sincroniza en tiempo real con una base de datos **Firebase Firestore**.
 
-First, run the development server:
+## 🚀 Instalación y Configuración
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Si has clonado este repositorio, necesitas conectarlo a tu propio proyecto de Firebase para que los productos, banners y usuarios se guarden en tu propia cuenta.
+
+### 1. Requisitos previos
+- Node.js (v18+)
+- Una cuenta de [Firebase](https://firebase.google.com/) con un proyecto creado.
+- Firestore Database habilitada en Firebase.
+
+### 2. Configurar Credenciales de Firebase
+1. En la raíz del proyecto, copia el archivo de ejemplo de variables de entorno:
+   ```bash
+   cp .env.example .env.local
+   ```
+2. Abre el archivo `.env.local` y reemplaza los valores de ejemplo con las credenciales reales de tu proyecto web de Firebase (las puedes encontrar en la configuración de tu proyecto en la consola de Firebase).
+
+Ejemplo de `.env.local`:
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY="AIzaSy..."
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="tu-proyecto.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="tu-proyecto"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="tu-proyecto.firebasestorage.app"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="123456789"
+NEXT_PUBLIC_FIREBASE_APP_ID="1:123456789:web:abcde"
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="G-123456"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> **Aviso de seguridad:** Tus datos estarán aislados en tu propia base de datos. Asegúrate de configurar las **Reglas de Seguridad de Firestore** para proteger tus datos de accesos no autorizados.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Iniciar el servidor de desarrollo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Instala las dependencias y corre el proyecto:
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver el resultado.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📦 Sincronización con el Sistema POS
+Este proyecto funciona en conjunto con la aplicación de escritorio (POS). Los productos que crees y administres en el sistema POS se reflejarán automáticamente en esta tienda web siempre y cuando ambos sistemas compartan las mismas credenciales de Firebase.
