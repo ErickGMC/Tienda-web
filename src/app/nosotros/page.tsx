@@ -1,7 +1,5 @@
 import { getWebConfig, getEmpresaConfig, getBannersActivos, getComunidadConfig } from "@/lib/actions";
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Store } from "lucide-react";
-import Image from "next/image";
-import HeroCarousel from "@/components/ui/HeroCarousel";
 import { TelefonosUtiles, AvisosSection, AnunciosSection } from "@/components/ui/ComunidadSection";
 
 export async function generateMetadata() {
@@ -32,18 +30,9 @@ export default async function NosotrosPage() {
     return `+${num.slice(0, 2)} ${num.slice(2)}`;
   };
 
-  const mainBanners = banners.filter(b => b.ctaActionCategory !== 'Nosotros');
-
   return (
     <main className="container mx-auto px-4 py-8 max-w-7xl">
       
-      {/* Banners Principales (Hero Carousel) */}
-      {mainBanners.length > 0 && (
-        <div className="mb-12">
-          <HeroCarousel banners={mainBanners} />
-        </div>
-      )}
-
       {/* Avisos */}
       <AvisosSection comunidad={comunidad} />
 
