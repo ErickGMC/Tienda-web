@@ -24,14 +24,14 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Drag to scroll logic optimized with useRef (prevents re-renders)
-  const dragState = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
+  const dragState = useRef({ isDragging: false, startX: 0, scrollLeft: 0, hasDragged: false });
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     dragState.current.isDragging = true;
+    dragState.current.hasDragged = false;
     dragState.current.startX = e.pageX - scrollRef.current.offsetLeft;
     dragState.current.scrollLeft = scrollRef.current.scrollLeft;
-    scrollRef.current.classList.add('dragging-active');
   };
 
   const handleMouseLeave = () => {
@@ -41,15 +41,29 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
 
   const handleMouseUp = () => {
     dragState.current.isDragging = false;
-    if (scrollRef.current) scrollRef.current.classList.remove('dragging-active');
+    // Small delay before removing the class so the click event is fully cancelled if it was dragging
+    if (scrollRef.current) {
+      setTimeout(() => {
+        if (scrollRef.current) scrollRef.current.classList.remove('dragging-active');
+      }, 0);
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!dragState.current.isDragging || !scrollRef.current) return;
-    e.preventDefault();
+    
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - dragState.current.startX) * 1.5; // smooth scrolling
-    scrollRef.current.scrollLeft = dragState.current.scrollLeft - walk;
+    
+    if (!dragState.current.hasDragged && Math.abs(x - dragState.current.startX) > 5) {
+      dragState.current.hasDragged = true;
+      scrollRef.current.classList.add('dragging-active');
+    }
+
+    if (dragState.current.hasDragged) {
+      e.preventDefault();
+      const walk = (x - dragState.current.startX) * 1.5; // smooth scrolling
+      scrollRef.current.scrollLeft = dragState.current.scrollLeft - walk;
+    }
   };
 
   const scrollByAmount = (amount: number) => {
