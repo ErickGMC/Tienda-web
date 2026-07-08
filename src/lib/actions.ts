@@ -44,10 +44,10 @@ export interface ComunidadConfig {
 }
 
 function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Producto {
-  const data = doc.data();
+  const data = doc.data() || {};
   
   let etiquetasArr: string[] = [];
-  if (data.etiquetas) {
+  if (data?.etiquetas) {
     if (Array.isArray(data.etiquetas)) {
       etiquetasArr = data.etiquetas;
     } else if (typeof data.etiquetas === 'string') {
@@ -75,7 +75,7 @@ function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Pro
 }
 
 function mapFirestoreBanner(doc: DocumentSnapshot | QueryDocumentSnapshot): Banner {
-  const data = doc.data();
+  const data = doc.data() || {};
   return {
     id: doc.id,
     title: data.title || '',
