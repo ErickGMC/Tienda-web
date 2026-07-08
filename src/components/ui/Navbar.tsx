@@ -48,7 +48,7 @@ export default function Navbar() {
               Catálogo
             </Link>
             <Link href="/nosotros" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">
-              Nuestra Tienda
+              Comunidad
             </Link>
           </nav>
         </div>

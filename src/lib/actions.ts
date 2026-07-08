@@ -38,9 +38,25 @@ export interface EmpresaConfig {
   leyenda?: string;
 }
 
+export interface Anuncio {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  telefono: string;
+}
+
+export interface Aviso {
+  id: string;
+  titulo: string;
+  contenido: string;
+  fecha: string;
+}
+
 export interface ComunidadConfig {
   avisoGlobal?: string;
   telefonos?: { id: string; nombre: string; numero: string }[];
+  anuncios?: Anuncio[];
+  avisos?: Aviso[];
 }
 
 function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Producto {
@@ -202,7 +218,9 @@ export const getComunidadConfig = unstable_cache(
       if (!docSnap.exists()) {
         return {
           avisoGlobal: '',
-          telefonos: []
+          telefonos: [],
+          anuncios: [],
+          avisos: []
         };
       }
       return docSnap.data() as ComunidadConfig;
@@ -210,7 +228,9 @@ export const getComunidadConfig = unstable_cache(
       console.error("Error fetching comunidad config from Firebase:", error);
       return {
         avisoGlobal: '',
-        telefonos: []
+        telefonos: [],
+        anuncios: [],
+        avisos: []
       };
     }
   },

@@ -49,3 +49,58 @@ export function TelefonosUtiles({ comunidad }: { comunidad: ComunidadConfig }) {
     </div>
   )
 }
+export function AvisosSection({ comunidad }: { comunidad: ComunidadConfig }) {
+  if (!comunidad || !comunidad.avisos || comunidad.avisos.length === 0) return null;
+
+  return (
+    <div className="mb-8 space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <AlertCircle className="w-5 h-5 text-rose-500" />
+        <h3 className="text-xl font-bold text-slate-800 dark:text-white">Avisos Importantes</h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {comunidad.avisos.map(aviso => (
+          <div key={aviso.id} className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/30 dark:to-orange-950/30 border-l-4 border-rose-500 rounded-r-xl p-4 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <h4 className="font-bold text-rose-900 dark:text-rose-400 text-lg">{aviso.titulo}</h4>
+              <span className="text-xs font-semibold px-2 py-1 bg-white/50 dark:bg-black/20 rounded-md text-rose-700 dark:text-rose-300">{aviso.fecha}</span>
+            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{aviso.contenido}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function AnunciosSection({ comunidad }: { comunidad: ComunidadConfig }) {
+  if (!comunidad || !comunidad.anuncios || comunidad.anuncios.length === 0) return null;
+
+  return (
+    <div className="mb-8 space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg text-emerald-600 dark:text-emerald-400">
+          <Info className="w-4 h-4" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-800 dark:text-white">Anuncios y Servicios</h3>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {comunidad.anuncios.map(anuncio => (
+          <div key={anuncio.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+            <h4 className="font-bold text-slate-800 dark:text-white text-base mb-1">{anuncio.nombre}</h4>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 flex-1">{anuncio.descripcion}</p>
+            <a 
+              href={`https://wa.me/51${anuncio.telefono.replace(/\s+/g, '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="mt-auto flex items-center justify-center gap-2 w-full py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-semibold transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              Contactar: {anuncio.telefono}
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

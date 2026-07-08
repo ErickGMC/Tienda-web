@@ -1,15 +1,16 @@
-import { getWebConfig, getEmpresaConfig, getBannersActivos } from "@/lib/actions";
+import { getWebConfig, getEmpresaConfig, getBannersActivos, getComunidadConfig } from "@/lib/actions";
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Store } from "lucide-react";
 import Image from "next/image";
 import HeroCarousel from "@/components/ui/HeroCarousel";
+import { TelefonosUtiles, AvisosSection, AnunciosSection } from "@/components/ui/ComunidadSection";
 
 export async function generateMetadata() {
   const config = await getWebConfig();
   const empresa = await getEmpresaConfig();
   const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
   return {
-    title: `Nuestra Tienda | ${nombre}`,
-    description: config.descripcionTienda || `Conoce más sobre ${nombre}. Ubicación, horarios de atención, contacto directo y mapa interactivo.`,
+    title: `Comunidad & Tienda | ${nombre}`,
+    description: config.descripcionTienda || `Conoce más sobre ${nombre}. Ubicación, horarios de atención, avisos y directorio de la comunidad.`,
   };
 }
 
@@ -17,6 +18,7 @@ export default async function NosotrosPage() {
   const config = await getWebConfig();
   const empresa = await getEmpresaConfig();
   const banners = await getBannersActivos();
+  const comunidad = await getComunidadConfig();
 
   const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
   const descripcion = config.descripcionTienda || "Tu tienda de confianza con los mejores productos para tu hogar.";
@@ -42,7 +44,16 @@ export default async function NosotrosPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Avisos */}
+      <AvisosSection comunidad={comunidad} />
+
+      {/* Anuncios de la Comunidad */}
+      <AnunciosSection comunidad={comunidad} />
+
+      {/* Telefonos Útiles */}
+      <TelefonosUtiles comunidad={comunidad} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
         
         {/* Info Column (Left) */}
         <div className="lg:col-span-1 space-y-6">
