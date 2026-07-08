@@ -4,38 +4,26 @@ import SearchBar from './SearchBar'
 import { Store, ListPlus, Info } from 'lucide-react'
 import Link from 'next/link'
 import { useTiendaStore } from '@/lib/store'
+import CartModal from './CartModal'
 
 export default function Navbar() {
-  const { consultaList, setInfoModalOpen, config, empresa } = useTiendaStore();
+  const { consultaList, setInfoModalOpen, setCartModalOpen, config, empresa } = useTiendaStore();
 
-  const handleConsultarLista = async () => {
-    if (consultaList.length === 0) return;
-    
-    // Log analytics
-    try {
-      const { logAnalyticsEvent } = await import('@/lib/actions');
-      await logAnalyticsEvent('whatsapp_click', {
-        source: 'navbar_list',
-        itemCount: consultaList.length
-      });
-    } catch (e) {
-      console.warn('Analytics error', e);
+  const handleConsultarLista = () => {
+    if (consultaList.length === 0) {
+      alert("Aún no has seleccionado ningún producto. Agrega productos a tu lista antes de continuar.");
+      return;
     }
-
-    const numero = config?.whatsapp || "51970560023";
-    let mensaje = "Hola, me interesa consultar el precio y disponibilidad de estos productos:%0A%0A";
     
-    consultaList.forEach((p, index) => {
-      mensaje += `${index + 1}. ${p.nombre}%0A`;
-    });
-    
-    window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
+    // Abrir el modal de carrito en lugar de enviar directo
+    setCartModalOpen(true);
   };
 
   const nombreComercial = empresa?.nombreComercial || config?.nombreTienda || "Minimarket Flor";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
+    <>
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
         
         {/* Logo Section & Navigation */}
@@ -89,5 +77,7 @@ export default function Navbar() {
         </div>
       </div>
     </header>
+    <CartModal />
+    </>
   )
 }

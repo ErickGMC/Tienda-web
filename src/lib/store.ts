@@ -10,6 +10,7 @@ interface TiendaState {
   isInfoModalOpen: boolean;
   config: WebConfig | null;
   empresa: EmpresaConfig | null;
+  isCartModalOpen: boolean;
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (category: CategoriaProducto | 'Todas') => void;
   addToConsulta: (producto: Producto) => void;
@@ -17,6 +18,7 @@ interface TiendaState {
   clearConsulta: () => void;
   setShowPrices: (show: boolean) => void;
   setInfoModalOpen: (isOpen: boolean) => void;
+  setCartModalOpen: (isOpen: boolean) => void;
   setConfig: (config: WebConfig, empresa: EmpresaConfig) => void;
 }
 
@@ -26,6 +28,7 @@ export const useTiendaStore = create<TiendaState>((set) => ({
   consultaList: [],
   showPrices: false,
   isInfoModalOpen: false,
+  isCartModalOpen: false,
   config: null,
   empresa: null,
   setSearchQuery: (query) => set({ searchQuery: query }),
@@ -42,6 +45,7 @@ export const useTiendaStore = create<TiendaState>((set) => ({
   clearConsulta: () => set({ consultaList: [] }),
   setShowPrices: (show) => set({ showPrices: show }),
   setInfoModalOpen: (isOpen) => set({ isInfoModalOpen: isOpen }),
+  setCartModalOpen: (isOpen) => set({ isCartModalOpen: isOpen }),
   setConfig: (config, empresa) => set({ config, empresa }),
 }))
 
