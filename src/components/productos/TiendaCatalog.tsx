@@ -23,32 +23,33 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
   const { searchQuery, selectedCategory, setSelectedCategory, setShowPrices, setConfig } = useTiendaStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  // Drag to scroll logic
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  // Drag to scroll logic optimized with useRef (prevents re-renders)
+  const dragState = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - scrollRef.current.offsetLeft);
-    setScrollLeft(scrollRef.current.scrollLeft);
+    dragState.current.isDragging = true;
+    dragState.current.startX = e.pageX - scrollRef.current.offsetLeft;
+    dragState.current.scrollLeft = scrollRef.current.scrollLeft;
+    scrollRef.current.classList.add('dragging-active');
   };
 
   const handleMouseLeave = () => {
-    setIsDragging(false);
+    dragState.current.isDragging = false;
+    if (scrollRef.current) scrollRef.current.classList.remove('dragging-active');
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
+    dragState.current.isDragging = false;
+    if (scrollRef.current) scrollRef.current.classList.remove('dragging-active');
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollRef.current) return;
+    if (!dragState.current.isDragging || !scrollRef.current) return;
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 2; // scroll-fast
-    scrollRef.current.scrollLeft = scrollLeft - walk;
+    const walk = (x - dragState.current.startX) * 1.5; // smooth scrolling
+    scrollRef.current.scrollLeft = dragState.current.scrollLeft - walk;
   };
 
   const scrollByAmount = (amount: number) => {
@@ -106,7 +107,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
           onMouseLeave={handleMouseLeave}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          className={`overflow-x-auto h-full flex-1 scroll-smooth cursor-grab active:cursor-grabbing hide-scrollbar flex items-center ${isDragging ? 'pointer-events-none' : ''}`}
+          className={`overflow-x-auto h-full flex-1 scroll-smooth cursor-grab active:cursor-grabbing hide-scrollbar flex items-center`}
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           <div className="flex gap-3 px-2 sm:px-14">
@@ -118,7 +119,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
                   selectedCategory === cat
                     ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md scale-105'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 hover:text-emerald-500'
-                } ${isDragging ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                }`}
               >
                 {cat}
               </button>
@@ -135,10 +136,13 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
         </button>
       </div>
 
-      {/* Estilo para ocultar scrollbar en navegadores Webkit (Chrome, Safari) si la clase hide-scrollbar no existe globalmente */}
+      {/* Estilo para ocultar scrollbar en navegadores Webkit (Chrome, Safari) y estilos de arrastre */}
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
+        }
+        .dragging-active button {
+          pointer-events: none !important;
         }
       `}} />
 
