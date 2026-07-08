@@ -114,7 +114,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       
       {/* Hero Carousel Dinámico */}
-      {!searchQuery && selectedCategory === 'Todas' && banners.length > 0 && (
+      {banners.length > 0 && (
         <HeroCarousel banners={banners} />
       )}
 
