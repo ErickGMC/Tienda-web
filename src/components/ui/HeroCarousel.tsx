@@ -56,7 +56,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
     <div className="relative w-full rounded-3xl mb-16 sm:mb-20 group">
       
       {/* Contenedor del Carrusel */}
-      <div className="overflow-hidden rounded-3xl shadow-2xl aspect-[16/10] sm:aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] min-h-[250px] relative" ref={emblaRef}>
+      <div className="overflow-hidden rounded-3xl shadow-2xl aspect-[4/1] relative" ref={emblaRef}>
         <div className="flex h-full">
           {banners.map((slide, idx) => (
             <div className="relative flex-[0_0_100%] h-full min-w-0" key={slide.id}>
@@ -83,7 +83,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                     
                     {/* Badge */}
                     {slide.badgeText && (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 text-white backdrop-blur-md text-xs font-bold mb-3 border border-white/20 shadow-lg">
+                      <div className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full bg-black/50 text-white backdrop-blur-md text-[8px] sm:text-xs font-bold mb-1 sm:mb-3 border border-white/20 shadow-lg">
                         {getBadgeIcon(slide.ctaActionCategory)}
                         {slide.badgeText}
                       </div>
@@ -91,12 +91,12 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
 
                     {/* Título y Subtítulo */}
                     {slide.title && (
-                      <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2 sm:mb-4 leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                      <h1 className="text-sm sm:text-4xl md:text-5xl font-extrabold text-white mb-0.5 sm:mb-4 leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] line-clamp-1">
                         {slide.title}
                       </h1>
                     )}
                     {slide.subtitle && (
-                      <p className="text-sm sm:text-base md:text-lg text-slate-100 max-w-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-3">
+                      <p className="text-[10px] sm:text-base md:text-lg text-slate-100 max-w-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-2 sm:line-clamp-3 leading-snug">
                         {slide.subtitle}
                       </p>
                     )}
@@ -109,16 +109,16 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
       </div>
 
       {/* Control Interactivo: Botón de Acción y Flechas solapados en el centro inferior */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20 flex items-center justify-center gap-2 w-full px-4 pointer-events-none">
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20 flex items-center justify-center gap-1 sm:gap-2 w-full px-2 pointer-events-none">
         
         {/* Flecha Anterior */}
         {banners.length > 1 && (
           <button 
             onClick={() => emblaApi?.scrollPrev()}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white flex items-center justify-center shadow-xl border-4 border-slate-50 dark:border-slate-900 transition-transform hover:scale-110 active:scale-95 pointer-events-auto flex-shrink-0"
+            className="w-6 h-6 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white flex items-center justify-center shadow-xl border-2 sm:border-4 border-slate-50 dark:border-slate-900 transition-transform hover:scale-110 active:scale-95 pointer-events-auto flex-shrink-0"
             aria-label="Anterior"
           >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ChevronLeft className="w-3 h-3 sm:w-6 sm:h-6" />
           </button>
         )}
 
@@ -126,7 +126,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
         {activeSlide && activeSlide.ctaText && (
           <button 
             onClick={() => handleCta(activeSlide.ctaActionCategory)}
-            className="px-6 py-3 sm:px-10 sm:py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-full shadow-[0_8px_30px_rgba(16,185,129,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-sm sm:text-base pointer-events-auto max-w-[200px] sm:max-w-none truncate border-4 border-slate-50 dark:border-slate-900"
+            className="px-3 py-1 sm:px-10 sm:py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-full shadow-[0_4px_15px_rgba(16,185,129,0.5)] sm:shadow-[0_8px_30px_rgba(16,185,129,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-[8px] sm:text-base pointer-events-auto max-w-[140px] sm:max-w-none truncate border-2 sm:border-4 border-slate-50 dark:border-slate-900"
           >
             {activeSlide.ctaText}
           </button>
@@ -136,10 +136,10 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
         {banners.length > 1 && (
           <button 
             onClick={() => emblaApi?.scrollNext()}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white flex items-center justify-center shadow-xl border-4 border-slate-50 dark:border-slate-900 transition-transform hover:scale-110 active:scale-95 pointer-events-auto flex-shrink-0"
+            className="w-6 h-6 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white flex items-center justify-center shadow-xl border-2 sm:border-4 border-slate-50 dark:border-slate-900 transition-transform hover:scale-110 active:scale-95 pointer-events-auto flex-shrink-0"
             aria-label="Siguiente"
           >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ChevronRight className="w-3 h-3 sm:w-6 sm:h-6" />
           </button>
         )}
       </div>
