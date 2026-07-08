@@ -1,10 +1,10 @@
 import { unstable_cache } from 'next/cache';
-import { collection, getDocs, doc, getDoc, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, DocumentSnapshot, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { Producto } from '@/types/producto';
 
-// Revalidar cada 0 segundos para que la web siempre refleje los cambios del POS instantáneamente
-const REVALIDATE_TIME = 0;
+// Revalidar cada 60 segundos para evitar alto consumo de cuota en Firebase, manteniendo la información fresca.
+const REVALIDATE_TIME = 60;
 
 export interface Banner {
   id: string;
@@ -43,7 +43,7 @@ export interface ComunidadConfig {
   telefonos?: { id: string; nombre: string; numero: string }[];
 }
 
-function mapFirestoreProduct(doc: any): Producto {
+function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Producto {
   const data = doc.data();
   
   let etiquetasArr: string[] = [];
@@ -54,7 +54,7 @@ function mapFirestoreProduct(doc: any): Producto {
       try {
         etiquetasArr = JSON.parse(data.etiquetas);
       } catch (e) {
-        etiquetasArr = data.etiquetas.split(',').map((s: string) => s.trim());
+        etiquetasArr = (data.etiquetas as string).split(',').map((s: string) => s.trim());
       }
     }
   }
@@ -74,7 +74,7 @@ function mapFirestoreProduct(doc: any): Producto {
   };
 }
 
-function mapFirestoreBanner(doc: any): Banner {
+function mapFirestoreBanner(doc: DocumentSnapshot | QueryDocumentSnapshot): Banner {
   const data = doc.data();
   return {
     id: doc.id,
@@ -219,7 +219,7 @@ export const getComunidadConfig = unstable_cache(
 );
 
 // Registrar evento de Analytics (No usar cache aquí)
-export async function logAnalyticsEvent(type: 'pageview' | 'whatsapp_click', details: any = {}) {
+export async function logAnalyticsEvent(type: 'pageview' | 'whatsapp_click', details: Record<string, unknown> = {}) {
   try {
     await addDoc(collection(db, 'analytics_events'), {
       type,

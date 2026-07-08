@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { Store, Tag, Utensils } from 'lucide-react'
@@ -9,13 +9,7 @@ import { useTiendaStore } from '@/lib/store'
 
 import { Banner } from '@/lib/actions'
 
-const GRADIENTS = [
-  'from-emerald-900/80 to-slate-900/80',
-  'from-amber-900/80 to-slate-900/80',
-  'from-rose-900/80 to-slate-900/80',
-  'from-indigo-900/80 to-slate-900/80',
-  'from-purple-900/80 to-slate-900/80'
-];
+
 
 export default function HeroCarousel({ banners }: { banners: Banner[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
@@ -26,7 +20,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
 
   const handleCta = (category?: string) => {
     if (category) {
-      setSelectedCategory(category as any)
+      setSelectedCategory(category)
       // Smooth scroll a productos (opcional)
       window.scrollTo({ top: 500, behavior: 'smooth' })
     }

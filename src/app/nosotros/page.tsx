@@ -1,6 +1,5 @@
 import { getWebConfig, getEmpresaConfig } from "@/lib/actions";
-import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart, Store } from "lucide-react";
-import Link from "next/link";
+import { MapPin, Phone, Mail, Clock, ShieldCheck, Store } from "lucide-react";
 
 export async function generateMetadata() {
   const config = await getWebConfig();

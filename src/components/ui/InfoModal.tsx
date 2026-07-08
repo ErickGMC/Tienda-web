@@ -11,7 +11,6 @@ export default function InfoModal() {
   const telefonoStr = empresa?.telefono || config?.whatsapp || '51970560023';
   const whatsappFormateado = `+${telefonoStr.slice(0, 2)} ${telefonoStr.slice(2)}`;
   const ubicacion = empresa?.direccionFiscal || config?.ubicacion || 'Av. Principal 123, Ciudad (Reemplazar con tu dirección)';
-  const nombreComercial = empresa?.nombreComercial || config?.nombreTienda || 'Minimarket Flor';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
