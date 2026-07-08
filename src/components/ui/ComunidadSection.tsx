@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Phone, AlertCircle, Info, X } from 'lucide-react'
 import { ComunidadConfig } from '@/lib/actions'
 
 export function AvisoGlobal({ comunidad }: { comunidad: ComunidadConfig }) {
   const [isVisible, setIsVisible] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (comunidad && comunidad.avisoGlobal) {
@@ -27,8 +29,8 @@ export function AvisoGlobal({ comunidad }: { comunidad: ComunidadConfig }) {
   };
 
   return (
-    <Link 
-      href="/nosotros" 
+    <div 
+      onClick={() => router.push('/nosotros')}
       className="bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-between gap-2 text-sm font-medium z-40 relative group hover:bg-amber-400 transition-colors cursor-pointer"
     >
       <div className="flex-1 flex items-center justify-center gap-2">
@@ -42,7 +44,7 @@ export function AvisoGlobal({ comunidad }: { comunidad: ComunidadConfig }) {
       >
         <X className="w-4 h-4" />
       </button>
-    </Link>
+    </div>
   )
 }
 

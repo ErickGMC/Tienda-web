@@ -53,7 +53,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
   const activeSlide = banners[selectedIndex] || banners[0];
 
   return (
-    <div className="relative w-full rounded-3xl mb-16 sm:mb-20 group">
+    <div className="relative w-full rounded-3xl mb-6 sm:mb-10 group">
       
       {/* Contenedor del Carrusel */}
       <div className="overflow-hidden rounded-3xl shadow-2xl aspect-[4/1] relative" ref={emblaRef}>

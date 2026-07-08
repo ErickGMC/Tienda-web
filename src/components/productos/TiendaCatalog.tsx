@@ -174,7 +174,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
       `}} />
 
       {/* Grid de Productos */}
-      <div id="productos-grid" className="mb-6 flex items-center justify-between pt-4">
+      <div id="productos-grid" className="mb-4 sm:mb-6 flex items-center justify-between pt-0 sm:pt-4">
         <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
           {searchQuery ? `Resultados para "${searchQuery}"` : selectedCategory === 'Todas' ? 'Productos Destacados' : selectedCategory}
         </h2>
