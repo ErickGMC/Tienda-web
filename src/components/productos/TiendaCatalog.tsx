@@ -49,7 +49,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
       )}
 
       {/* Categorías (Filtros) */}
-      <div className="mb-10 overflow-x-auto pb-4 scrollbar-hide">
+      <div className="mb-10 overflow-x-auto pb-4 custom-scrollbar">
         <div className="flex gap-3">
           {CATEGORIAS.map((cat) => (
             <button

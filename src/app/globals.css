@@ -45,3 +45,60 @@ input[type="submit"]:not(:disabled):active,
   transform: scale(0.96);
   filter: brightness(0.9);
 }
+
+/* Scrollbar Personalizada Premium (Global) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1; /* slate-300 */
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8; /* slate-400 */
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background-color: #334155; /* slate-700 */
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #475569; /* slate-600 */
+  }
+}
+
+/* Scrollbar sutil para componentes horizontales (ej. categorías) */
+.custom-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .custom-scrollbar {
+    scrollbar-color: #334155 transparent;
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px; /* Más delgada que la global */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.02);
+  border-radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.02);
+  }
+}
