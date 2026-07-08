@@ -34,7 +34,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
 
   const handleCta = (category?: string) => {
     if (category) {
-      setSelectedCategory(category)
+      setSelectedCategory(category as any)
       window.scrollTo({ top: 500, behavior: 'smooth' })
     }
   }
