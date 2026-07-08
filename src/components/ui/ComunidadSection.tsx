@@ -24,7 +24,7 @@ export function TelefonosUtiles({ comunidad }: { comunidad: ComunidadConfig }) {
           <Info className="w-6 h-6" />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white">Directorio del Barrio</h3>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white">Directorio de Contactos Útiles</h3>
           <p className="text-sm text-slate-500">Teléfonos de emergencia y utilidad para nuestra comunidad.</p>
         </div>
       </div>
@@ -55,15 +55,15 @@ export function AvisosSection({ comunidad }: { comunidad: ComunidadConfig }) {
   return (
     <div className="mb-8 space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <AlertCircle className="w-5 h-5 text-rose-500" />
+        <AlertCircle className="w-5 h-5 text-indigo-500" />
         <h3 className="text-xl font-bold text-slate-800 dark:text-white">Avisos Importantes</h3>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {comunidad.avisos.map(aviso => (
-          <div key={aviso.id} className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/30 dark:to-orange-950/30 border-l-4 border-rose-500 rounded-r-xl p-4 shadow-sm">
+          <div key={aviso.id} className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border-l-4 border-indigo-500 rounded-r-xl p-4 shadow-sm">
             <div className="flex justify-between items-start mb-2">
-              <h4 className="font-bold text-rose-900 dark:text-rose-400 text-lg">{aviso.titulo}</h4>
-              <span className="text-xs font-semibold px-2 py-1 bg-white/50 dark:bg-black/20 rounded-md text-rose-700 dark:text-rose-300">{aviso.fecha}</span>
+              <h4 className="font-bold text-indigo-900 dark:text-indigo-400 text-lg">{aviso.titulo}</h4>
+              <span className="text-xs font-semibold px-2 py-1 bg-white/50 dark:bg-black/20 rounded-md text-indigo-700 dark:text-indigo-300">{aviso.fecha}</span>
             </div>
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{aviso.contenido}</p>
           </div>

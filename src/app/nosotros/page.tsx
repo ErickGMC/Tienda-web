@@ -50,12 +50,20 @@ export default async function NosotrosPage() {
       {/* Anuncios de la Comunidad */}
       <AnunciosSection comunidad={comunidad} />
 
-      {/* Telefonos Útiles */}
-      <TelefonosUtiles comunidad={comunidad} />
+      <div className="mt-12 bg-white dark:bg-slate-900 border-2 border-emerald-500/20 rounded-3xl p-6 lg:p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-8 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl">
+            <Store className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Información de la Tienda</h3>
+            <p className="text-sm text-slate-500">Ubicación, horarios y medios de contacto directos.</p>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
-        
-        {/* Info Column (Left) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Info Column (Left) */}
         <div className="lg:col-span-1 space-y-6">
           
           {/* Tarjeta Ubicación */}
@@ -176,7 +184,11 @@ export default async function NosotrosPage() {
           </div>
         </div>
 
+        </div>
       </div>
+
+      {/* Telefonos Útiles (Al final) */}
+      <TelefonosUtiles comunidad={comunidad} />
 
     </main>
   );
