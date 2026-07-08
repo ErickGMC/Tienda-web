@@ -1,5 +1,5 @@
 import { Producto } from '@/types/producto'
-import { MessageCircle, Plus, Check } from 'lucide-react'
+import { MessageCircle, Plus, Check, Star } from 'lucide-react'
 import Image from 'next/image'
 import { useTiendaStore } from '@/lib/store'
 
@@ -64,6 +64,13 @@ export default function ProductCard({ producto }: ProductCardProps) {
         <div className="absolute top-2 left-2 px-2 py-0.5 sm:top-3 sm:left-3 sm:px-3 sm:py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm">
           {producto.categoria}
         </div>
+
+        {/* Destacado Badge */}
+        {producto.destacado && (
+          <div className="absolute top-2 right-2 px-2 py-0.5 sm:top-3 sm:right-3 sm:px-3 sm:py-1 bg-amber-500 rounded-full text-[10px] sm:text-xs font-bold text-white shadow-sm flex items-center gap-1">
+            <Star className="w-3 h-3 fill-white" /> Destacado
+          </div>
+        )}
       </div>
 
       {/* Content Area */}

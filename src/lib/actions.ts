@@ -3,8 +3,8 @@ import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, DocumentSnap
 import { db } from './firebase/config';
 import { Producto } from '@/types/producto';
 
-// Revalidar cada 60 segundos para evitar alto consumo de cuota en Firebase, manteniendo la información fresca.
-const REVALIDATE_TIME = 60;
+// Revalidar cada 10 segundos para ver los cambios del POS (precios, config) casi al instante
+const REVALIDATE_TIME = 10;
 
 export interface Banner {
   id: string;
