@@ -68,7 +68,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2 sm:gap-4">
           <button 
             onClick={() => setInfoModalOpen(true)}
-            className="p-2 rounded-full text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-full text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors md:hidden"
             title="Información de la tienda"
           >
             <Info className="w-5 h-5" />

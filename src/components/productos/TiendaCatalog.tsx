@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Producto, CategoriaProducto } from '@/types/producto';
 import { Banner, WebConfig, EmpresaConfig } from '@/lib/actions';
 import ProductCard from './ProductCard';
 import HeroCarousel from '@/components/ui/HeroCarousel';
 import { useTiendaStore } from '@/lib/store';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TiendaCatalogProps {
   productos: Producto[];
@@ -20,6 +21,41 @@ const CATEGORIAS: (CategoriaProducto | 'Todas')[] = [
 
 export default function TiendaCatalog({ productos, banners, config, empresa }: TiendaCatalogProps) {
   const { searchQuery, selectedCategory, setSelectedCategory, setShowPrices, setConfig } = useTiendaStore();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Drag to scroll logic
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // scroll-fast
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const scrollByAmount = (amount: number) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
 
   // Sincronizar la configuración general
   useEffect(() => {
@@ -54,24 +90,57 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
         <HeroCarousel banners={banners} />
       )}
 
-      {/* Categorías (Filtros) */}
-      <div className="mb-10 overflow-x-auto pb-4 custom-scrollbar">
-        <div className="flex gap-3">
-          {CATEGORIAS.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all duration-300 ${
-                selectedCategory === cat
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 hover:text-emerald-500'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+      {/* Categorías (Filtros con flechas y arrastre) */}
+      <div className="relative mb-10 group flex items-center">
+        {/* Flecha Izquierda (visible en desktop) */}
+        <button 
+          onClick={() => scrollByAmount(-200)}
+          className="absolute left-0 z-10 w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 flex items-center justify-center -translate-x-1/2 hidden sm:group-hover:flex text-slate-500 hover:text-emerald-500 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <div 
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          className={`overflow-x-auto pb-2 pt-2 flex-1 scroll-smooth cursor-grab active:cursor-grabbing hide-scrollbar`}
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          <div className="flex gap-3 px-2">
+            {CATEGORIAS.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all duration-300 select-none ${
+                  selectedCategory === cat
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md scale-105'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 hover:text-emerald-500'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Flecha Derecha (visible en desktop) */}
+        <button 
+          onClick={() => scrollByAmount(200)}
+          className="absolute right-0 z-10 w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 flex items-center justify-center translate-x-1/2 hidden sm:group-hover:flex text-slate-500 hover:text-emerald-500 transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
+
+      {/* Estilo para ocultar scrollbar en navegadores Webkit (Chrome, Safari) si la clase hide-scrollbar no existe globalmente */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}} />
 
       {/* Grid de Productos */}
       <div className="mb-6 flex items-center justify-between">
