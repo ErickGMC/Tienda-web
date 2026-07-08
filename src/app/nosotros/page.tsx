@@ -30,7 +30,6 @@ export default async function NosotrosPage() {
     return `+${num.slice(0, 2)} ${num.slice(2)}`;
   };
 
-  const bannerNosotros = banners.find(b => b.ctaActionCategory === 'Nosotros');
   const mainBanners = banners.filter(b => b.ctaActionCategory !== 'Nosotros');
 
   return (
@@ -38,36 +37,8 @@ export default async function NosotrosPage() {
       
       {/* Banners Principales (Hero Carousel) */}
       {mainBanners.length > 0 && (
-        <div className="mb-10">
+        <div className="mb-12">
           <HeroCarousel banners={mainBanners} />
-        </div>
-      )}
-
-      {/* Hero Section */}
-      {bannerNosotros ? (
-        <div className="relative rounded-3xl overflow-hidden mb-12 shadow-2xl aspect-[4/1] min-h-[150px] w-full">
-          <Image 
-            src={bannerNosotros.imageUrl} 
-            alt={bannerNosotros.title || "Nuestra Tienda"} 
-            fill 
-            sizes="100vw"
-            unoptimized={true}
-            className="object-cover" 
-          />
-        </div>
-      ) : (
-        <div className="relative rounded-3xl overflow-hidden mb-12 bg-gradient-to-r from-emerald-800 to-slate-900 text-white p-8 md:p-16 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white backdrop-blur-md text-xs font-semibold mb-4 border border-white/20">
-              <Store className="w-4 h-4 text-emerald-400" />
-              Nuestra Tienda
-            </span>
-            <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight drop-shadow">{nombre}</h1>
-            <p className="text-lg text-slate-200 leading-relaxed font-medium drop-shadow">{descripcion}</p>
-          </div>
-          <div className="w-24 h-24 md:w-32 md:h-32 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl flex items-center justify-center text-emerald-400 shrink-0">
-            <Store className="w-12 h-12 md:w-16 md:h-16" />
-          </div>
         </div>
       )}
 
