@@ -8,7 +8,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ producto }: ProductCardProps) {
-  const { consultaList, addToConsulta, showPrices } = useTiendaStore();
+  const { consultaList, addToConsulta, showPrices, empresa } = useTiendaStore();
   const estaEnLista = consultaList.some(p => p.id === producto.id);
 
   // Generar un color aleatorio para el placeholder si no hay imagen
@@ -33,7 +33,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
       console.warn('Analytics error', e);
     }
 
-    const numero = "51970560023";
+    const numero = empresa?.telefono || "51970560023";
     const mensaje = `Hola, quisiera consultar por el producto: *${producto.nombre}*`;
     window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
   };
@@ -43,9 +43,9 @@ export default function ProductCard({ producto }: ProductCardProps) {
       
       {/* Image / Placeholder Area */}
       <div className="relative aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-        {(producto.thumbnailUrl || producto.imagenUrl) ? (
+        {producto.imagenUrl ? (
           <Image 
-            src={producto.thumbnailUrl || producto.imagenUrl || ''} 
+            src={producto.imagenUrl || ''} 
             alt={producto.nombre}
             fill
             unoptimized={true}

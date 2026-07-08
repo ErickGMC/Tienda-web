@@ -21,7 +21,6 @@ export interface Producto {
   precio: number;
   unidadMedida: 'unidad' | 'kg' | 'litro' | 'servicio' | 'variable';
   imagenUrl?: string;
-  thumbnailUrl?: string;
   disponible: boolean;
   destacado: boolean; // Para mostrar en la pantalla principal o hero
   etiquetas: string[]; // Ej: ["desayuno", "rapido", "caliente"]

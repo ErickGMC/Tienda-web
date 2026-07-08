@@ -3,8 +3,8 @@ import { collection, getDocs, doc, getDoc, query, where, orderBy, addDoc, server
 import { db } from './firebase/config';
 import { Producto } from '@/types/producto';
 
-// Revalidar cada 60 segundos para tener cambios casi en tiempo real en la web
-const REVALIDATE_TIME = 60;
+// Revalidar cada 0 segundos para que la web siempre refleje los cambios del POS instantáneamente
+const REVALIDATE_TIME = 0;
 
 export interface Banner {
   id: string;
@@ -68,7 +68,6 @@ function mapFirestoreProduct(doc: any): Producto {
     precio: Number(data.precio) || 0,
     unidadMedida: data.unidadMedida || 'unidad',
     imagenUrl: data.imagenUrl || '',
-    thumbnailUrl: data.thumbnailUrl || '',
     disponible: data.disponible === true || data.disponible === 1 || data.disponible === '1',
     destacado: data.destacado === true || data.destacado === 1 || data.destacado === '1',
     etiquetas: etiquetasArr
