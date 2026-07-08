@@ -57,6 +57,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                   src={slide.imageUrl}
                   alt={slide.title}
                   fill
+                  unoptimized={true}
                   sizes="100vw"
                   className="object-cover"
                   priority={idx === 0}

@@ -15,7 +15,7 @@ interface TiendaCatalogProps {
 }
 
 const CATEGORIAS: (CategoriaProducto | 'Todas')[] = [
-  'Todas', 'Abarrotes', 'Frutas y Verduras', 'Limpieza', 'Bazar', 'Servicios', 'Otros'
+  'Todas', 'Abarrotes', 'Bebidas', 'Golosinas', 'Verduras', 'Frutas', 'Aseo y limpieza', 'Ferreteria y electricidad', 'Bazar', 'Medicina', 'Libreria', 'Ocasión y Otros'
 ];
 
 export default function TiendaCatalog({ productos, banners, config, empresa }: TiendaCatalogProps) {

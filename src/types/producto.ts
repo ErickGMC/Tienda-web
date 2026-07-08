@@ -1,12 +1,15 @@
 export type CategoriaProducto = 
-  | 'Abarrotes' 
-  | 'Limpieza' 
-  | 'Frutas y Verduras' 
-  | 'Bazar' 
-  | 'Medicina' 
-  | 'Ferretería y Electricidad'
-  | 'Golosinas y Bebidas'
-  | 'Servicios' 
+  | 'Abarrotes'
+  | 'Bebidas'
+  | 'Golosinas'
+  | 'Verduras'
+  | 'Frutas'
+  | 'Aseo y limpieza'
+  | 'Ferreteria y electricidad'
+  | 'Bazar'
+  | 'Medicina'
+  | 'Libreria'
+  | 'Ocasión y Otros'
   | 'Otros';
 
 export interface Producto {
