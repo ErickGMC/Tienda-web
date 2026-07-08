@@ -60,13 +60,13 @@ export default function Navbar() {
 
         {/* Right Section (WhatsApp Consult & Info) */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <button 
-            onClick={() => setInfoModalOpen(true)}
+          <Link 
+            href="/nosotros"
             className="p-2 rounded-full text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors md:hidden"
-            title="Información de la tienda"
+            title="Comunidad"
           >
             <Info className="w-5 h-5" />
-          </button>
+          </Link>
           
           <button 
             onClick={handleConsultarLista}

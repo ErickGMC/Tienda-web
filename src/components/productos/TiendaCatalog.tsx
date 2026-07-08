@@ -111,7 +111,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
   }, [productos, selectedCategory, searchQuery]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
       
       {/* Hero Carousel Dinámico */}
       {banners.length > 0 && (
@@ -119,7 +119,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
       )}
 
       {/* Categorías (Filtros con flechas y arrastre) */}
-      <div className="relative mb-10 group flex items-center h-12 sm:h-14">
+      <div className="relative mb-6 sm:mb-10 group flex items-center h-12 sm:h-14">
         {/* Flecha Izquierda (visible en desktop) */}
         <button 
           onClick={() => scrollByAmount(-200)}
