@@ -67,7 +67,7 @@ function mapFirestoreProduct(doc: any): Producto {
     categoria: data.categoria || 'Otros',
     precio: Number(data.precio) || 0,
     unidadMedida: data.unidadMedida || 'unidad',
-    imagenUrl: data.imagenUrl || '',
+    imagenUrl: data.imagenUrl || data.imageUrl || '',
     disponible: data.disponible === true || data.disponible === 1 || data.disponible === '1',
     destacado: data.destacado === true || data.destacado === 1 || data.destacado === '1',
     etiquetas: etiquetasArr
