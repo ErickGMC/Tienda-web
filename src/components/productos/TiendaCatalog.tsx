@@ -32,11 +32,17 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
 
   // Filtrado optimizado con useMemo
   const productosFiltrados = useMemo(() => {
-    return productos.filter((p) => {
+    const filtrados = productos.filter((p) => {
       const matchCategoria = selectedCategory === 'Todas' || p.categoria === selectedCategory;
       const matchSearch = p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           p.descripcion.toLowerCase().includes(searchQuery.toLowerCase());
       return matchCategoria && matchSearch;
+    });
+
+    return filtrados.sort((a, b) => {
+      if (a.destacado && !b.destacado) return -1;
+      if (!a.destacado && b.destacado) return 1;
+      return 0;
     });
   }, [productos, selectedCategory, searchQuery]);
 
