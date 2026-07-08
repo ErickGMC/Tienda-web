@@ -7,7 +7,7 @@ import { useTiendaStore } from '@/lib/store'
 import CartModal from './CartModal'
 
 export default function Navbar() {
-  const { consultaList, setInfoModalOpen, setCartModalOpen, config, empresa } = useTiendaStore();
+  const { consultaList, setInfoModalOpen, setCartModalOpen, config, empresa, setSelectedCategory, setSearchQuery } = useTiendaStore();
 
   const handleConsultarLista = () => {
     if (consultaList.length === 0) {
@@ -19,6 +19,12 @@ export default function Navbar() {
     setCartModalOpen(true);
   };
 
+  const handleReset = () => {
+    setSelectedCategory('Todas');
+    setSearchQuery('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const nombreComercial = empresa?.nombreComercial || config?.nombreTienda || "Minimarket Flor";
 
   return (
@@ -28,7 +34,7 @@ export default function Navbar() {
         
         {/* Logo Section & Navigation */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group" onClick={handleReset}>
             <div className="p-2 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl text-white shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all duration-300">
               <Store className="w-6 h-6" />
             </div>
@@ -38,7 +44,7 @@ export default function Navbar() {
           </Link>
           
           <nav className="hidden md:flex items-center gap-4">
-            <Link href="/" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">
+            <Link href="/" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors" onClick={handleReset}>
               Catálogo
             </Link>
             <Link href="/nosotros" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition-colors">

@@ -58,6 +58,19 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
     }
   };
 
+  const handleCategoryClick = (cat: CategoriaProducto | 'Todas') => {
+    setSelectedCategory(cat);
+    // Add smooth scroll to the products grid
+    setTimeout(() => {
+      const productsGrid = document.getElementById('productos-grid');
+      if (productsGrid) {
+        // Scroll to the grid with a little offset for the sticky header
+        const y = productsGrid.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 50);
+  };
+
   // Sincronizar la configuración general
   useEffect(() => {
     if (config && config.mostrarPrecios !== undefined) {
@@ -114,7 +127,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
             {CATEGORIAS.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => handleCategoryClick(cat)}
                 className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all duration-300 select-none ${
                   selectedCategory === cat
                     ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md scale-105'
@@ -147,7 +160,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
       `}} />
 
       {/* Grid de Productos */}
-      <div className="mb-6 flex items-center justify-between">
+      <div id="productos-grid" className="mb-6 flex items-center justify-between pt-4">
         <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
           {searchQuery ? `Resultados para "${searchQuery}"` : selectedCategory === 'Todas' ? 'Productos Destacados' : selectedCategory}
         </h2>
