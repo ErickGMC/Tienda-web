@@ -1,6 +1,7 @@
 import { getWebConfig, getEmpresaConfig, getBannersActivos } from "@/lib/actions";
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Store } from "lucide-react";
 import Image from "next/image";
+import HeroCarousel from "@/components/ui/HeroCarousel";
 
 export async function generateMetadata() {
   const config = await getWebConfig();
@@ -30,10 +31,18 @@ export default async function NosotrosPage() {
   };
 
   const bannerNosotros = banners.find(b => b.ctaActionCategory === 'Nosotros');
+  const mainBanners = banners.filter(b => b.ctaActionCategory !== 'Nosotros');
 
   return (
-    <main className="container mx-auto px-4 py-12 max-w-7xl">
+    <main className="container mx-auto px-4 py-8 max-w-7xl">
       
+      {/* Banners Principales (Hero Carousel) */}
+      {mainBanners.length > 0 && (
+        <div className="mb-10">
+          <HeroCarousel banners={mainBanners} />
+        </div>
+      )}
+
       {/* Hero Section */}
       {bannerNosotros ? (
         <div className="relative rounded-3xl overflow-hidden mb-12 shadow-2xl aspect-[4/1] min-h-[150px] w-full">
