@@ -1,16 +1,48 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Phone, AlertCircle, Info, X } from 'lucide-react'
 import { ComunidadConfig } from '@/lib/actions'
-import { Phone, AlertCircle, Info } from 'lucide-react'
 
 export function AvisoGlobal({ comunidad }: { comunidad: ComunidadConfig }) {
-  if (!comunidad || !comunidad.avisoGlobal) return null;
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (comunidad && comunidad.avisoGlobal) {
+      const dismissedAviso = localStorage.getItem('dismissedAviso');
+      if (dismissedAviso !== comunidad.avisoGlobal) {
+        setIsVisible(true);
+      }
+    }
+  }, [comunidad]);
+
+  if (!isVisible || !comunidad || !comunidad.avisoGlobal) return null;
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.preventDefault(); // Evitar que el Link se active
+    e.stopPropagation();
+    setIsVisible(false);
+    localStorage.setItem('dismissedAviso', comunidad.avisoGlobal!);
+  };
 
   return (
-    <div className="bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium z-40 relative">
-      <AlertCircle className="w-5 h-5 shrink-0" />
-      <span className="text-center">{comunidad.avisoGlobal}</span>
-    </div>
+    <Link 
+      href="/nosotros" 
+      className="bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-between gap-2 text-sm font-medium z-40 relative group hover:bg-amber-400 transition-colors cursor-pointer"
+    >
+      <div className="flex-1 flex items-center justify-center gap-2">
+        <AlertCircle className="w-5 h-5 shrink-0" />
+        <span className="text-center group-hover:underline">{comunidad.avisoGlobal}</span>
+      </div>
+      <button 
+        onClick={handleDismiss}
+        className="p-1 hover:bg-amber-600/20 rounded-full transition-colors"
+        aria-label="Cerrar aviso"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </Link>
   )
 }
 
