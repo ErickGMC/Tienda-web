@@ -123,7 +123,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
         {/* Flecha Izquierda (visible en desktop) */}
         <button 
           onClick={() => scrollByAmount(-200)}
-          className="absolute left-0 top-0 bottom-0 z-10 w-10 sm:w-12 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-[4px_0_12px_rgba(0,0,0,0.05)] border-r border-y border-slate-200 dark:border-slate-800 flex items-center justify-center hidden sm:flex text-slate-500 hover:text-emerald-500 transition-colors rounded-r-xl"
+          className="absolute left-0 top-0 bottom-0 z-10 w-10 sm:w-12 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-[4px_0_12px_rgba(0,0,0,0.05)] border-r border-y border-slate-200 dark:border-slate-800 flex items-center justify-center hidden sm:flex text-slate-500 hover:text-amber-500 transition-colors rounded-r-xl"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -144,8 +144,8 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
                 onClick={() => handleCategoryClick(cat)}
                 className={`whitespace-nowrap px-6 py-2.5 rounded-full font-medium transition-all duration-300 select-none ${
                   selectedCategory === cat
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md scale-105'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 hover:text-emerald-500'
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 scale-105'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-amber-500 hover:text-amber-500'
                 }`}
               >
                 {cat}
@@ -157,7 +157,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
         {/* Flecha Derecha (visible en desktop) */}
         <button 
           onClick={() => scrollByAmount(200)}
-          className="absolute right-0 top-0 bottom-0 z-10 w-10 sm:w-12 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-[-4px_0_12px_rgba(0,0,0,0.05)] border-l border-y border-slate-200 dark:border-slate-800 flex items-center justify-center hidden sm:flex text-slate-500 hover:text-emerald-500 transition-colors rounded-l-xl"
+          className="absolute right-0 top-0 bottom-0 z-10 w-10 sm:w-12 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-[-4px_0_12px_rgba(0,0,0,0.05)] border-l border-y border-slate-200 dark:border-slate-800 flex items-center justify-center hidden sm:flex text-slate-500 hover:text-amber-500 transition-colors rounded-l-xl"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

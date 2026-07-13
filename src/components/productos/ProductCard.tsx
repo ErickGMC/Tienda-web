@@ -8,15 +8,15 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ producto }: ProductCardProps) {
-  const { consultaList, addToConsulta, showPrices, empresa } = useTiendaStore();
+  const { consultaList, addToConsulta, showPrices, empresa, config, showToast } = useTiendaStore();
   const estaEnLista = consultaList.some(p => p.id === producto.id);
 
   // Generar un color aleatorio para el placeholder si no hay imagen
   const placeholderGradients = [
-    'from-emerald-400 to-teal-500',
-    'from-blue-400 to-indigo-500',
+    'from-amber-400 to-orange-500',
+    'from-rose-400 to-red-500',
+    'from-yellow-400 to-amber-500',
     'from-orange-400 to-rose-500',
-    'from-purple-400 to-fuchsia-500',
   ]
   const gradient = placeholderGradients[producto.nombre.length % placeholderGradients.length]
 
@@ -33,9 +33,14 @@ export default function ProductCard({ producto }: ProductCardProps) {
       console.warn('Analytics error', e);
     }
 
-    const numero = empresa?.telefono || "51970560023";
+    const numero = config?.whatsapp || empresa?.telefono || "51970560023";
     const mensaje = `Hola, quisiera consultar por el producto: *${producto.nombre}*`;
     window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
+  };
+
+  const handleAddToList = () => {
+    addToConsulta(producto);
+    showToast(`"${producto.nombre}" agregado a tu lista`);
   };
 
   return (
@@ -75,7 +80,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
 
       {/* Content Area */}
       <div className="p-3 sm:p-5 flex flex-col flex-1">
-        <h3 className="font-semibold text-sm sm:text-lg text-slate-900 dark:text-white line-clamp-2 mb-1 group-hover:text-emerald-500 transition-colors">
+        <h3 className="font-semibold text-sm sm:text-lg text-slate-900 dark:text-white line-clamp-2 mb-1 group-hover:text-amber-500 transition-colors">
           {producto.nombre}
         </h3>
         
@@ -99,19 +104,19 @@ export default function ProductCard({ producto }: ProductCardProps) {
             <button 
               onClick={handleConsultarWhatsapp}
               title="Consultar por WhatsApp"
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-green-500 hover:bg-green-600 text-white font-medium transition-colors text-xs sm:text-sm"
+              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white font-medium transition-colors text-xs sm:text-sm"
             >
               <MessageCircle className="w-4 h-4 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Consultar</span>
             </button>
             <button 
-              onClick={() => addToConsulta(producto)}
+              onClick={handleAddToList}
               disabled={estaEnLista}
               title={estaEnLista ? "Ya en la lista" : "Agregar a la lista"}
               className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl transition-all duration-300 shrink-0 ${
                 estaEnLista 
-                  ? 'bg-slate-100 dark:bg-slate-800 text-emerald-500 cursor-not-allowed' 
-                  : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white'
+                  ? 'bg-slate-100 dark:bg-slate-800 text-amber-500 cursor-not-allowed' 
+                  : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white'
               }`}
             >
               {estaEnLista ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}

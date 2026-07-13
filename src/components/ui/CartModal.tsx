@@ -32,7 +32,7 @@ export default function CartModal() {
       console.warn('Analytics error', e);
     }
 
-    const numero = empresa?.telefono || config?.whatsapp || "51970560023";
+    const numero = config?.whatsapp || empresa?.telefono || "51970560023";
     let mensaje = "Hola, me interesa consultar el precio y disponibilidad de estos productos:%0A%0A";
     
     consultaList.forEach((p, index) => {
@@ -135,7 +135,7 @@ export default function CartModal() {
             </button>
             <button 
               onClick={handleConsultar}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/30 transition-all flex items-center justify-center gap-2 transform active:scale-95"
+              className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-[#25D366]/30 transition-all flex items-center justify-center gap-2 transform active:scale-95"
             >
               <Send className="w-5 h-5" />
               Enviar pedido por WhatsApp

@@ -3,6 +3,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Brand identity: warm amber/orange */
+  --brand-primary: #f59e0b; /* amber-500 */
+  --brand-dark: #d97706;    /* amber-600 */
+  --brand-light: #fef3c7;   /* amber-100 */
+  /* WhatsApp action color */
+  --whatsapp: #25D366;
+  --whatsapp-dark: #1ebe5d;
 }
 
 @theme inline {
@@ -27,7 +34,6 @@ body {
 
 /* 
  * Feedback visual global para clicks
- * Esto aplica un efecto de "hundimiento" a todos los botones e interacciones
  */
 button, 
 a, 
@@ -44,6 +50,63 @@ input[type="submit"]:not(:disabled):active,
 .clickable:active {
   transform: scale(0.96);
   filter: brightness(0.9);
+}
+
+/* Slide-in animation for CartModal sidebar */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toast notification animation */
+@keyframes toast-in {
+  from {
+    transform: translateY(100%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-toast-out {
+  animation: toast-out 0.25s ease-in forwards;
+}
+
+/* WhatsApp FAB pulse */
+@keyframes fab-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+}
+
+.animate-fab-pulse {
+  animation: fab-pulse 2.5s ease-in-out infinite;
 }
 
 /* Scrollbar Personalizada Premium (Global) */
@@ -89,7 +152,7 @@ input[type="submit"]:not(:disabled):active,
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  height: 6px; /* Más delgada que la global */
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {

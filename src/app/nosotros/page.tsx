@@ -5,7 +5,7 @@ import { TelefonosUtiles, AvisosSection, AnunciosSection } from "@/components/ui
 export async function generateMetadata() {
   const config = await getWebConfig();
   const empresa = await getEmpresaConfig();
-  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
+  const nombre = config.nombreTienda || empresa.nombreComercial || "Minimarket Flor";
   return {
     title: `Comunidad & Tienda | ${nombre}`,
     description: config.descripcionTienda || `Conoce más sobre ${nombre}. Ubicación, horarios de atención, avisos y directorio de la comunidad.`,
@@ -15,14 +15,11 @@ export async function generateMetadata() {
 export default async function NosotrosPage() {
   const config = await getWebConfig();
   const empresa = await getEmpresaConfig();
-  const banners = await getBannersActivos();
   const comunidad = await getComunidadConfig();
 
-  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
-  const descripcion = config.descripcionTienda || "Tu tienda de confianza con los mejores productos para tu hogar.";
   const horario = config.horarioAtencion || "Lunes a Sábado: 8:00 AM - 10:00 PM\nDomingo: 9:00 AM - 6:00 PM";
-  const ubicacion = empresa.direccionFiscal || config.ubicacion || "Av. Principal 123, Ciudad";
-  const whatsapp = empresa.telefono || config.whatsapp || "51970560023";
+  const ubicacion = config.ubicacion || empresa.direccionFiscal || "Av. Principal 123, Ciudad";
+  const whatsapp = config.whatsapp || empresa.telefono || "51970560023";
   const email = config.emailContacto || "contacto@minimarketflor.com";
   const mapaUrl = config.mapaIframe || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3901.865912448375!2d-77.04537!3d-12.04637!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDAyJzQ2LjkiUyA3N8KwMDInNDMuMyJX!5e0!3m2!1ses!2spe!4v1650000000000!5m2!1ses!2spe";
 
@@ -39,9 +36,9 @@ export default async function NosotrosPage() {
       {/* Anuncios de la Comunidad */}
       <AnunciosSection comunidad={comunidad} />
 
-      <div className="mt-12 bg-white dark:bg-slate-900 border-2 border-emerald-500/20 rounded-3xl p-6 lg:p-8 shadow-sm">
+      <div className="mt-12 bg-white dark:bg-slate-900 border-2 border-amber-500/20 rounded-3xl p-6 lg:p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-8 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl">
+          <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl">
             <Store className="w-6 h-6" />
           </div>
           <div>
@@ -58,7 +55,7 @@ export default async function NosotrosPage() {
           {/* Tarjeta Ubicación */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition duration-300">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+              <div className="p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
                 <MapPin className="w-6 h-6" />
               </div>
               <div>
@@ -71,7 +68,7 @@ export default async function NosotrosPage() {
           {/* Tarjeta Horarios */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition duration-300">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
+              <div className="p-3 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-2xl">
                 <Clock className="w-6 h-6" />
               </div>
               <div>
@@ -86,7 +83,7 @@ export default async function NosotrosPage() {
             <h3 className="font-bold text-slate-800 dark:text-white text-lg border-b border-slate-100 dark:border-slate-800 pb-2">Canales de Atención</h3>
             
             <div className="flex items-center gap-4">
-              <div className="p-2 bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-xl">
+              <div className="p-2 bg-[#25D366]/10 text-[#25D366] rounded-xl">
                 <Phone className="w-5 h-5" />
               </div>
               <div>
@@ -95,7 +92,7 @@ export default async function NosotrosPage() {
                   href={`https://wa.me/${whatsapp}?text=Hola,%20quisiera%20hacer%20una%20consulta`} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="font-bold text-slate-700 dark:text-slate-300 hover:text-green-500 transition text-sm"
+                  className="font-bold text-slate-700 dark:text-slate-300 hover:text-[#25D366] transition text-sm"
                 >
                   {formatearWhatsapp(whatsapp)}
                 </a>
@@ -119,13 +116,13 @@ export default async function NosotrosPage() {
           </div>
 
           {/* Tarjeta Compromiso */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-900/50 dark:to-slate-900/30 rounded-3xl border border-emerald-100 dark:border-slate-800/80 p-6 space-y-4">
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-900/50 dark:to-slate-900/30 rounded-3xl border border-amber-100 dark:border-slate-800/80 p-6 space-y-4">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold">
               <ShieldCheck className="w-5 h-5" />
-              <span>Garantía de Frescura</span>
+              <span>Garantía de Calidad</span>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-              Nos preocupamos por tu bienestar. Todos nuestros perecibles son seleccionados cuidadosamente a diario para garantizar la mejor calidad en tu mesa.
+              Nos preocupamos por tu bienestar. Seleccionamos cuidadosamente a diario nuestros productos para garantizar la mejor calidad en tu mesa.
             </p>
           </div>
 
@@ -135,7 +132,7 @@ export default async function NosotrosPage() {
         <div className="lg:col-span-2 flex flex-col">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm flex-1 flex flex-col p-6">
             <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-4 flex items-center gap-2">
-              <MapPin className="text-emerald-500 w-5 h-5" />
+              <MapPin className="text-amber-500 w-5 h-5" />
               Ubicación en el Mapa
             </h3>
             
@@ -165,7 +162,7 @@ export default async function NosotrosPage() {
                 href={`https://wa.me/${whatsapp}?text=Hola,%20quisiera%20hacer%20un%20pedido`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-full text-xs font-bold transition shadow-sm"
+                className="bg-[#25D366] hover:bg-[#1ebe5d] text-white px-5 py-2 rounded-full text-xs font-bold transition shadow-sm"
               >
                 Hacer Pedido
               </a>

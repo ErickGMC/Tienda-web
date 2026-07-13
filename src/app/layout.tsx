@@ -2,80 +2,86 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
-import InfoModal from "@/components/ui/InfoModal";
-import AnalyticsTracker from "@/components/ui/AnalyticsTracker";
+import { getComunidadConfig } from "@/lib/actions";
 import { AvisoGlobal } from "@/components/ui/ComunidadSection";
-import { getWebConfig, getEmpresaConfig, getComunidadConfig } from "@/lib/actions";
+import AnalyticsTracker from "@/components/ui/AnalyticsTracker";
+import Footer from "@/components/ui/Footer";
+import WhatsAppFAB from "@/components/ui/WhatsAppFAB";
+import Toast from "@/components/ui/Toast";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const config = await getWebConfig();
-  const empresa = await getEmpresaConfig();
-  
-  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
-  const desc = config.descripcionTienda || "Encuentra abarrotes, frutas, verduras, servicios, y más cerca de ti. Precios justos y atención rápida por WhatsApp.";
-
-  return {
-    title: `${nombre} | Catálogo y Tienda`,
-    description: desc,
-    keywords: ["minimarket", "abarrotes", "tienda", nombre.toLowerCase(), "compras", "delivery whatsapp", "bodega"],
-    authors: [{ name: nombre }],
-    openGraph: {
-      title: `${nombre} | Tu tienda de confianza`,
-      description: desc,
-      url: "https://minimarket-flor.com",
-      siteName: nombre,
-      locale: "es_PE",
-      type: "website",
-    },
-    robots: {
+export const metadata: Metadata = {
+  title: "Minimarket Flor - Catálogo de Productos",
+  description: "Encuentra los mejores abarrotes, verduras, frutas y más. Haz tu pedido por WhatsApp fácilmente.",
+  keywords: ["minimarket", "abarrotes", "verduras", "frutas", "delivery", "bodega", "compras"],
+  authors: [{ name: "Minimarket Flor" }],
+  openGraph: {
+    title: "Minimarket Flor",
+    description: "Catálogo virtual de nuestro minimarket. Productos frescos y variados.",
+    url: "https://minimarket-flor.com", // ACTUALIZAR CUANDO TENGAS DOMINIO
+    siteName: "Minimarket Flor",
+    locale: "es_PE",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
       index: true,
       follow: true,
-    }
-  };
-}
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const config = await getWebConfig();
-  const empresa = await getEmpresaConfig();
+  // Obtenemos la configuración de la comunidad para el aviso global
   const comunidad = await getComunidadConfig();
-  
-  const nombre = empresa.nombreComercial || config.nombreTienda || "Minimarket Flor";
-  const desc = config.descripcionTienda || "Minimarket local ofreciendo abarrotes, limpieza, bazar y más.";
-  const direccion = empresa.direccionFiscal || config.ubicacion || "Av. Principal 123";
-  const telefono = empresa.telefono || config.whatsapp || "51970560023";
 
-  // Datos estructurados (Schema.org) para que Google y las IA entiendan qué es tu negocio y dónde está
+  // Datos estructurados para Google (LocalBusiness)
+  // Esto ayuda MUCHO al SEO local
   const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
-    name: nombre,
-    description: desc,
-    image: 'https://minimarket-flor.com/logo.png', // idealmente config.logoUrl
-    url: 'https://minimarket-flor.com',
-    telephone: `+${telefono}`,
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: direccion,
-      addressCountry: 'PE'
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Minimarket Flor",
+    "image": "https://minimarket-flor.com/logo.png", // ACTUALIZAR LUEGO
+    "@id": "https://minimarket-flor.com", // ACTUALIZAR LUEGO
+    "url": "https://minimarket-flor.com", // ACTUALIZAR LUEGO
+    "telephone": "+51970560023",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Av. Principal 123", // SE ACTUALIZA DESDE FIREBASE IDEALMENTE PERO ESTO ES PARA GOOGLE
+      "addressLocality": "Ciudad",
+      "addressRegion": "Región",
+      "postalCode": "00000",
+      "addressCountry": "PE"
     },
-    priceRange: 'S/',
-    openingHoursSpecification: [
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": -12.046374, // EJEMPLO
+      "longitude": -77.042793 // EJEMPLO
+    },
+    "openingHoursSpecification": [
       {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: [
-          'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
         ],
-        opens: '07:00',
-        closes: '22:00'
+        "opens": "08:00",
+        "closes": "22:00"
       }
     ]
   };
@@ -95,10 +101,12 @@ export default async function RootLayout({
         <AnalyticsTracker />
         <AvisoGlobal comunidad={comunidad} />
         <Navbar />
-        <InfoModal />
         <main className="flex-1 w-full relative">
           {children}
         </main>
+        <Footer />
+        <WhatsAppFAB />
+        <Toast />
       </body>
     </html>
   );
