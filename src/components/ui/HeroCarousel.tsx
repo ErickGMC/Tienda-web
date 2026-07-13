@@ -7,11 +7,14 @@ import { Store, Tag, Utensils, ChevronLeft, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import { useTiendaStore } from '@/lib/store'
 
+import { useRouter } from 'next/navigation'
+
 import { Banner } from '@/lib/actions'
 
 
 
 export default function HeroCarousel({ banners }: { banners: Banner[] }) {
+  const router = useRouter()
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
     Autoplay({ delay: 5000, stopOnInteraction: true })
   ])
@@ -34,6 +37,10 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
 
   const handleCta = (category?: string) => {
     if (category) {
+      if (category === 'Comunidad') {
+        router.push('/nosotros')
+        return
+      }
       setSelectedCategory(category as any)
       window.scrollTo({ top: 500, behavior: 'smooth' })
     }
