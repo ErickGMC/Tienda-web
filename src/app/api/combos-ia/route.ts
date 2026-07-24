@@ -40,10 +40,10 @@ export interface ComboResponse {
 
 export async function POST(request: Request) {
   try {
-    // 1. Verificar si la IA está habilitada desde el POS
+    // 1. Verificar si los Combos con IA están habilitados desde el POS
     const iaConfig = await getIAConfig();
-    if (!iaConfig.iaBusquedaHabilitada) {
-      return NextResponse.json({ error: 'IA_DISABLED', mensaje: 'El servicio de IA está temporalmente deshabilitado.' }, { status: 503 });
+    if (!iaConfig.iaCombosHabilitada) {
+      return NextResponse.json({ error: 'IA_DISABLED', mensaje: 'El servicio de IA de combos está temporalmente deshabilitado.' }, { status: 503 });
     }
 
     const body = await request.json();

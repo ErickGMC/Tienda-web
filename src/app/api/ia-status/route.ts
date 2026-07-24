@@ -3,7 +3,7 @@
  * Endpoint ligero para verificar si la IA está habilitada desde el POS.
  *
  * GET /api/ia-status
- * Response: { iaHabilitada: boolean }
+ * Response: { iaHabilitada: boolean, iaCombosHabilitada: boolean }
  */
 
 import { NextResponse } from 'next/server';
@@ -16,7 +16,10 @@ export async function GET() {
   try {
     const iaConfig = await getIAConfig();
     return NextResponse.json(
-      { iaHabilitada: iaConfig.iaBusquedaHabilitada },
+      {
+        iaHabilitada: iaConfig.iaBusquedaHabilitada,
+        iaCombosHabilitada: iaConfig.iaCombosHabilitada,
+      },
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -24,6 +27,9 @@ export async function GET() {
       }
     );
   } catch (error: any) {
-    return NextResponse.json({ iaHabilitada: false, error: error.message }, { status: 200 });
+    return NextResponse.json(
+      { iaHabilitada: false, iaCombosHabilitada: false, error: error.message },
+      { status: 200 }
+    );
   }
 }

@@ -38,15 +38,24 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [combo, setCombo] = useState<ComboResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [iaDeshabilitada, setIaDeshabilitada] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Focus al abrir
+  // Focus al abrir y verificar estado de IA
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
       setCombo(null);
       setSolicitud('');
       setError(null);
+      setIaDeshabilitada(false);
+      // Verificar si los combos con IA están habilitados
+      fetch('/api/ia-status', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.iaCombosHabilitada) setIaDeshabilitada(true);
+        })
+        .catch(() => {}); // fail silently, el servidor devolverá 503 si es necesario
     }
   }, [isOpen]);
 
@@ -136,8 +145,25 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
         {/* ── Body ─────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
+          {/* Estado: IA de Combos Deshabilitada */}
+          {iaDeshabilitada && (
+            <div className="py-8 flex flex-col items-center gap-4 text-center">
+              <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <Sparkles className="w-7 h-7 text-slate-300" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  Servicio no disponible
+                </p>
+                <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                  El armador de combos con IA está temporalmente deshabilitado desde la administración de la tienda.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Área de solicitud */}
-          {!combo && !isLoading && (
+          {!iaDeshabilitada && !combo && !isLoading && (
             <>
               <div>
                 <textarea
@@ -186,7 +212,7 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
           )}
 
           {/* Loading */}
-          {isLoading && (
+          {!iaDeshabilitada && isLoading && (
             <div className="py-10 flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-14 h-14 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
@@ -202,7 +228,7 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
           )}
 
           {/* Resultado del Combo */}
-          {combo && !isLoading && (
+          {!iaDeshabilitada && combo && !isLoading && (
             <div className="space-y-4">
               {/* Header del combo */}
               <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-900/20 dark:to-indigo-900/20 border border-violet-100 dark:border-violet-800">
@@ -253,7 +279,7 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
 
         {/* ── Footer con CTA ───────────────────────────────────────── */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex-shrink-0">
-          {!combo && !isLoading && (
+          {!iaDeshabilitada && !combo && !isLoading && (
             <button
               onClick={() => generarCombo()}
               disabled={solicitud.trim().length < 5}
@@ -268,7 +294,7 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
             </button>
           )}
 
-          {combo && !isLoading && (
+          {!iaDeshabilitada && combo && !isLoading && (
             <button
               onClick={agregarTodoAlCarrito}
               className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all

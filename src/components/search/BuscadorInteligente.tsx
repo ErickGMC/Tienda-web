@@ -16,6 +16,7 @@ interface SearchResult {
   nivel: 1 | 2;
   latencyMs: number;
   iaHabilitada: boolean;
+  iaCombosHabilitada?: boolean;
 }
 
 interface BuscadorInteligenteProps {
@@ -35,12 +36,13 @@ export default function BuscadorInteligente({
   const [isLoading, setIsLoading] = useState(false);
   const [nivelUsado, setNivelUsado] = useState<1 | 2 | null>(null);
   const [iaHabilitada, setIaHabilitada] = useState(false);
+  const [iaCombosHabilitada, setIaCombosHabilitada] = useState(false);
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Verificar el estado de la IA al cargar la página
+  // Verificar el estado de la IA al cargar la página (una sola llamada para ambos estados)
   useEffect(() => {
     async function verificarIA() {
       try {
@@ -48,9 +50,11 @@ export default function BuscadorInteligente({
         if (res.ok) {
           const data = await res.json();
           setIaHabilitada(Boolean(data.iaHabilitada));
+          setIaCombosHabilitada(Boolean(data.iaCombosHabilitada));
         }
       } catch {
         setIaHabilitada(false);
+        setIaCombosHabilitada(false);
       }
     }
     verificarIA();
@@ -95,6 +99,7 @@ export default function BuscadorInteligente({
       setResultados(data.productos);
       setNivelUsado(data.nivel);
       setIaHabilitada(Boolean(data.iaHabilitada));
+      // iaCombosHabilitada NO se actualiza desde search-ia (solo desde ia-status al montar)
       setMostrarDropdown(data.productos.length > 0);
     } catch {
       setNivelUsado(1);
@@ -227,8 +232,8 @@ export default function BuscadorInteligente({
               <Search className="w-4 h-4" />
             </button>
 
-            {/* Botón "Armar Combo" (Aparece solo con IA Activada) */}
-            {mostrarCombos && iaHabilitada && onAbrirCombos && (
+            {/* Botón "Armar Combo" (Aparece solo si los combos IA están activados independientemente) */}
+            {mostrarCombos && iaCombosHabilitada && onAbrirCombos && (
               <button
                 type="button"
                 onClick={onAbrirCombos}

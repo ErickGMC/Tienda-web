@@ -33,6 +33,7 @@ export interface SearchResult {
 
 export interface IAConfig {
   iaBusquedaHabilitada: boolean;
+  iaCombosHabilitada: boolean;
 }
 
 // ── Admin SDK Helper ─────────────────────────────────────────────────────────
@@ -86,13 +87,18 @@ export async function getIAConfig(): Promise<IAConfig> {
     );
     if (res.ok) {
       const data = await res.json();
-      const enabled = Boolean(data?.fields?.iaBusquedaHabilitada?.booleanValue);
-      return { iaBusquedaHabilitada: enabled };
+      const busquedaEnabled = Boolean(data?.fields?.iaBusquedaHabilitada?.booleanValue);
+      const combosEnabled = Boolean(data?.fields?.iaCombosHabilitada?.booleanValue);
+      return {
+        iaBusquedaHabilitada: busquedaEnabled,
+        // Regla de negocio: los combos requieren que la búsqueda IA esté activa
+        iaCombosHabilitada: busquedaEnabled && combosEnabled,
+      };
     }
   } catch (e) {
     console.warn('[RAG] Error leyendo web_config/ia:', e);
   }
-  return { iaBusquedaHabilitada: false };
+  return { iaBusquedaHabilitada: false, iaCombosHabilitada: false };
 }
 
 // ── Nivel 1: Búsqueda Exacta ─────────────────────────────────────────────────
