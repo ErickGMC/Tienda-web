@@ -139,7 +139,7 @@ export default function BuscadorInteligente({
       // - Si es término corto / 1-2 palabras: 350ms (respuesta rápida)
       const palabras = valLimpia.split(/\s+/);
       const requiereDebounceLargo = iaHabilitada && (palabras.length >= 3 || valLimpia.length >= 15);
-      const tiempoDebounce = requiereDebounceLargo ? 600 : 350;
+      const tiempoDebounce = requiereDebounceLargo ? 400 : 300;
 
       debounceRef.current = setTimeout(() => {
         realizarBusqueda(val);

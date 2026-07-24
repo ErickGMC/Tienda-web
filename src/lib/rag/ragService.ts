@@ -181,63 +181,52 @@ export async function generarEmbedding(texto: string): Promise<number[]> {
 }
 
 /**
- * Búsqueda vectorial usando findNearest de Admin SDK con fallback resiliente a similitud coseno en memoria.
+ * Búsqueda vectorial usando motor coseno resiliente en memoria.
  */
 export async function busquedaSemantica(
   queryEmbedding: number[],
   maxResultados = 6
 ): Promise<Producto[]> {
-  // 1. Intentar con findNearest de Firebase Admin SDK
-  try {
-    const adminDb = getAdminDb();
-    const vectorQuery = adminDb.collection('productos').findNearest({
-      vectorField: 'embedding',
-      queryVector: FieldValue.vector(queryEmbedding.slice(0, 768)),
-      limit: maxResultados,
-      distanceMeasure: 'COSINE',
-    });
-
-    const snap = await vectorQuery.get();
-    if (snap.docs.length > 0) {
-      const resultados = snap.docs
-        .map(d => mapProducto(d.data(), d.id))
-        .filter(p => p.disponible);
-      if (resultados.length > 0) return resultados;
-    }
-  } catch (err: any) {
-    console.warn('[RAG] findNearest Admin SDK no disponible, usando motor coseno:', err?.message);
-  }
-
-  // 2. Motor Resiliente: Similitud Coseno en memoria con Client SDK
   try {
     const snap = await getDocs(collection(db, 'productos'));
-    const productosConScore = snap.docs
-      .map(docSnap => {
-        const data = docSnap.data();
-        const producto = mapProducto(data, docSnap.id);
-        const vec = extractEmbeddingArray(data.embedding);
-        const score = vec ? cosineSimilarity(queryEmbedding, vec) : 0;
-        return { producto, score };
-      })
-      .filter(item => item.producto.disponible);
-
-    // Ordenar por puntuación semántica descendente
-    productosConScore.sort((a, b) => b.score - a.score);
-
-    // Retornar top resultados con filtro de relevancia
-    const resultados = productosConScore
-      .filter(item => item.score > 0.35)
-      .slice(0, maxResultados)
-      .map(item => item.producto);
-
-    if (resultados.length > 0) return resultados;
-
-    // Si la similitud estricta fue baja, retornar los top sin corte de umbral
-    return productosConScore.slice(0, maxResultados).map(item => item.producto);
+    return busquedaSemanticaConDocs(queryEmbedding, snap.docs, maxResultados);
   } catch (err: any) {
     console.error('[RAG] Fallback por similitud coseno falló:', err);
     return [];
   }
+}
+
+/**
+ * Procesa los documentos cargados y calcula la similitud coseno de forma síncrona/ultra-rápida.
+ */
+export function busquedaSemanticaConDocs(
+  queryEmbedding: number[],
+  productosDocs: any[],
+  maxResultados = 6
+): Producto[] {
+  const productosConScore = productosDocs
+    .map(docSnap => {
+      const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
+      const producto = mapProducto(data, docSnap.id);
+      const vec = extractEmbeddingArray(data.embedding);
+      const score = vec ? cosineSimilarity(queryEmbedding, vec) : 0;
+      return { producto, score };
+    })
+    .filter(item => item.producto.disponible);
+
+  // Ordenar por puntuación semántica descendente
+  productosConScore.sort((a, b) => b.score - a.score);
+
+  // Retornar top resultados con filtro de relevancia
+  const resultados = productosConScore
+    .filter(item => item.score > 0.35)
+    .slice(0, maxResultados)
+    .map(item => item.producto);
+
+  if (resultados.length > 0) return resultados;
+
+  // Si la similitud estricta fue baja, retornar los top sin corte de umbral
+  return productosConScore.slice(0, maxResultados).map(item => item.producto);
 }
 
 // ── Router Principal de Búsqueda ─────────────────────────────────────────────
@@ -256,8 +245,13 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
   }
 
   try {
-    const embedding = await generarEmbedding(terminoLimpio);
-    let productos = await busquedaSemantica(embedding);
+    // ⚡ OPTIMIZACIÓN ULTRA-RÁPIDA: Ejecución en PARALELO de Gemini API y Firestore getDocs
+    const [embedding, snap] = await Promise.all([
+      generarEmbedding(terminoLimpio),
+      getDocs(collection(db, 'productos')),
+    ]);
+
+    let productos = busquedaSemanticaConDocs(embedding, snap.docs);
 
     if (productos.length === 0) {
       productos = await busquedaExacta(terminoLimpio);
