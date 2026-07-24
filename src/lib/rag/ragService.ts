@@ -4,7 +4,7 @@
  *
  * NIVELES DE BÚSQUEDA:
  *  Nivel 1 — Búsqueda exacta (Firestore query por nombre/código). Siempre activo. Costo $0.
- *  Nivel 2 — Búsqueda semántica (embedding + findNearest). Solo cuando IA está habilitada.
+ *  Nivel 2 — Búsqueda semántica (embedding + findNearest con Firebase Admin SDK). Solo cuando IA está habilitada.
  *
  * La verificación de si la IA está habilitada se hace antes de llamar a este servicio
  * (en el API route), leyendo el documento `web_config/ia` en Firestore.
@@ -17,12 +17,11 @@ import {
   getDocs,
   orderBy,
   limit,
-  VectorValue,
-  findNearest,
-  DistanceMeasure,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Producto } from '@/types/producto';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -36,11 +35,22 @@ export interface IAConfig {
   iaBusquedaHabilitada: boolean;
 }
 
+// ── Admin SDK Helper ─────────────────────────────────────────────────────────
+
+function getAdminDb() {
+  if (getApps().length === 0) {
+    initializeApp({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'minimarket-flor-8d7f9',
+    });
+  }
+  return getFirestore();
+}
+
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
 /**
  * Mapea un documento de Firestore al tipo Producto del cliente.
- * Excluye el campo `embedding` (VectorValue) para no serializar un binario innecesario.
+ * Excluye el campo `embedding` para no serializar un array innecesario.
  */
 function mapProducto(docData: any, id: string): Producto {
   const { embedding, ...rest } = docData;
@@ -49,6 +59,8 @@ function mapProducto(docData: any, id: string): Producto {
     etiquetas = rest.etiquetas;
   } else if (typeof rest.etiquetas === 'string') {
     try { etiquetas = JSON.parse(rest.etiquetas); } catch { etiquetas = []; }
+  } else if (typeof rest.etiquetas === 'object' && rest.etiquetas !== null) {
+    etiquetas = Object.values(rest.etiquetas).filter(e => typeof e === 'string');
   }
   return {
     ...rest,
@@ -82,14 +94,12 @@ export async function getIAConfig(): Promise<IAConfig> {
 
 /**
  * Búsqueda de texto clásica por nombre del producto.
- * Utiliza un rango de Firestore para simular un LIKE `%term%` en el prefijo.
  * Costo: 0 créditos de IA.
  */
 export async function busquedaExacta(termino: string, maxResultados = 8): Promise<Producto[]> {
   const terminoLower = termino.toLowerCase().trim();
   if (!terminoLower) return [];
 
-  // Estrategia: rango de caracteres unicode para prefix-match en Firestore
   const inicio = terminoLower;
   const fin = terminoLower + '\uf8ff';
 
@@ -109,14 +119,10 @@ export async function busquedaExacta(termino: string, maxResultados = 8): Promis
 // ── Nivel 2: Búsqueda Semántica (Vector Search) ───────────────────────────────
 
 /**
- * Genera un embedding de 768 dimensiones usando la API de Gemini text-embedding-004.
- * Solo se llama desde Server Components / API Routes (no expone la API key al cliente).
- * @param texto Texto a vectorizar.
- * @returns Array de 768 floats.
+ * Genera un embedding de 768 dimensiones usando la API de Gemini.
  */
 export async function generarEmbedding(texto: string): Promise<number[]> {
   const apiKey = process.env.GEMINI_API_KEY;
-  // gemini-embedding-001 es el sucesor de text-embedding-004 (deprecado)
   const modelo = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
 
   if (!apiKey) throw new Error('[RAG] GEMINI_API_KEY no configurada en .env');
@@ -126,35 +132,28 @@ export async function generarEmbedding(texto: string): Promise<number[]> {
   const embeddingModel = genAI.getGenerativeModel({ model: modelo });
 
   const result = await embeddingModel.embedContent(texto);
-  return result.embedding.values;
+  return result.embedding.values.slice(0, 768);
 }
 
 /**
- * Búsqueda vectorial usando `findNearest` de Firestore Native Vector Search.
- * Requiere que los productos tengan el campo `embedding` (VectorValue 768 dims) indexado.
- * @param queryEmbedding Vector de la consulta del usuario (768 dims).
- * @param maxResultados Número máximo de productos a retornar.
+ * Búsqueda vectorial usando `findNearest` de Firebase Admin SDK en el servidor.
  */
 export async function busquedaSemantica(
   queryEmbedding: number[],
   maxResultados = 6
 ): Promise<Producto[]> {
-  const productosRef = collection(db, 'productos');
+  const adminDb = getAdminDb();
+  const vectorQuery = adminDb.collection('productos').findNearest({
+    vectorField: 'embedding',
+    queryVector: FieldValue.vector(queryEmbedding.slice(0, 768)),
+    limit: maxResultados,
+    distanceMeasure: 'COSINE',
+  });
 
-  const vectorQuery = findNearest(
-    productosRef,
-    'embedding',
-    VectorValue.fromArray(queryEmbedding),
-    {
-      limit: maxResultados,
-      distanceMeasure: DistanceMeasure.COSINE,
-    }
-  );
-
-  const snap = await getDocs(vectorQuery);
+  const snap = await vectorQuery.get();
   const resultados = snap.docs
     .map(d => mapProducto(d.data(), d.id))
-    .filter(p => p.disponible); // Filtrado adicional de productos deshabilitados
+    .filter(p => p.disponible);
 
   return resultados;
 }
@@ -163,24 +162,17 @@ export async function busquedaSemantica(
 
 /**
  * Punto de entrada del servicio de búsqueda.
- * Decide automáticamente qué nivel usar:
- *  - Si la consulta parece un código de barras o tiene <=2 palabras → Nivel 1 (exacta).
- *  - Si es una frase con intención → Nivel 2 (semántica, si IA habilitada).
- * @param termino Texto ingresado por el usuario.
- * @param usarIA Si false, fuerza siempre Nivel 1.
  */
 export async function buscar(termino: string, usarIA: boolean): Promise<SearchResult> {
   const inicio = Date.now();
   const palabras = termino.trim().split(/\s+/);
   const esConsultaSimple = palabras.length <= 2 || /^\d{6,}$/.test(termino.trim());
 
-  // Nivel 1 siempre si es consulta simple o IA apagada
   if (esConsultaSimple || !usarIA) {
     const productos = await busquedaExacta(termino);
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
   }
 
-  // Nivel 2: Búsqueda Semántica
   try {
     const embedding = await generarEmbedding(termino);
     const productos = await busquedaSemantica(embedding);
