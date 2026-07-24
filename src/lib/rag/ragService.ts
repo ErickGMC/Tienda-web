@@ -79,9 +79,9 @@ function mapProducto(docData: any, id: string): Producto {
  */
 export async function getIAConfig(): Promise<IAConfig> {
   try {
-    const { doc, getDoc } = await import('firebase/firestore');
-    const snap = await getDoc(doc(db, 'web_config', 'ia'));
-    if (snap.exists()) {
+    const adminDb = getAdminDb();
+    const snap = await adminDb.collection('web_config').doc('ia').get();
+    if (snap.exists) {
       return { iaBusquedaHabilitada: Boolean(snap.data()?.iaBusquedaHabilitada) };
     }
   } catch (e) {
