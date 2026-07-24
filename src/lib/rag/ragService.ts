@@ -134,6 +134,7 @@ export async function busquedaExacta(termino: string, maxResultados = 8): Promis
 function extractEmbeddingArray(data: any): number[] | null {
   if (!data) return null;
   if (Array.isArray(data)) return data;
+  if (typeof data.toArray === 'function') return data.toArray();
   if (Array.isArray(data.values)) return data.values;
   if (Array.isArray(data._values)) return data._values;
   if (data.mapValue?.fields?.values) {
@@ -209,14 +210,16 @@ export async function busquedaSemantica(
 
   // 2. Motor Resiliente: Similitud Coseno en memoria con Client SDK
   try {
-    const snap = await getDocs(query(collection(db, 'productos'), where('disponible', '==', true)));
-    const productosConScore = snap.docs.map(docSnap => {
-      const data = docSnap.data();
-      const producto = mapProducto(data, docSnap.id);
-      const vec = extractEmbeddingArray(data.embedding);
-      const score = vec ? cosineSimilarity(queryEmbedding, vec) : 0;
-      return { producto, score };
-    });
+    const snap = await getDocs(collection(db, 'productos'));
+    const productosConScore = snap.docs
+      .map(docSnap => {
+        const data = docSnap.data();
+        const producto = mapProducto(data, docSnap.id);
+        const vec = extractEmbeddingArray(data.embedding);
+        const score = vec ? cosineSimilarity(queryEmbedding, vec) : 0;
+        return { producto, score };
+      })
+      .filter(item => item.producto.disponible);
 
     // Ordenar por puntuación semántica descendente
     productosConScore.sort((a, b) => b.score - a.score);
