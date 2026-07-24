@@ -127,6 +127,43 @@ export async function busquedaExacta(termino: string, maxResultados = 8): Promis
   return snap.docs.map(d => mapProducto(d.data(), d.id));
 }
 
+// ── Utilidades RAG / Similitud Coseno ───────────────────────────────────────
+
+/**
+ * Extrae el array de floats de embedding sin importar cómo esté serializado en Firestore.
+ * Soporta VectorValue, MapValue, ArrayValue, _values, etc.
+ */
+function extractEmbeddingArray(data: any): number[] | null {
+  if (!data) return null;
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.values)) return data.values;
+  if (Array.isArray(data._values)) return data._values;
+  if (data.mapValue?.fields?.values) {
+    const raw = data.mapValue.fields.values.arrayValue?.values || [];
+    return raw.map((v: any) => Number(v.doubleValue || v.integerValue || 0));
+  }
+  return null;
+}
+
+/**
+ * Calcula la similitud coseno entre dos vectores numéricos.
+ * Retorna un valor entre -1 y 1 (o 0 si vectores nulos).
+ */
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  const len = Math.min(vecA.length, vecB.length);
+  for (let i = 0; i < len; i++) {
+    dot += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 // ── Nivel 2: Búsqueda Semántica (Vector Search) ───────────────────────────────
 
 /**
@@ -147,12 +184,13 @@ export async function generarEmbedding(texto: string): Promise<number[]> {
 }
 
 /**
- * Búsqueda vectorial usando `findNearest` de Firebase Admin SDK en el servidor.
+ * Búsqueda vectorial usando findNearest de Admin SDK con fallback resiliente a similitud coseno en memoria.
  */
 export async function busquedaSemantica(
   queryEmbedding: number[],
   maxResultados = 6
 ): Promise<Producto[]> {
+  // 1. Intentar con findNearest de Firebase Admin SDK
   try {
     const adminDb = getAdminDb();
     const vectorQuery = adminDb.collection('productos').findNearest({
@@ -163,16 +201,43 @@ export async function busquedaSemantica(
     });
 
     const snap = await vectorQuery.get();
-    const resultados = snap.docs
-      .map(d => mapProducto(d.data(), d.id))
-      .filter(p => p.disponible);
-
-    return resultados;
+    if (snap.docs.length > 0) {
+      const resultados = snap.docs
+        .map(d => mapProducto(d.data(), d.id))
+        .filter(p => p.disponible);
+      if (resultados.length > 0) return resultados;
+    }
   } catch (err: any) {
-    console.warn('[RAG] Fallback por índice vectorial en construcción o error:', err?.message);
-    const adminDb = getAdminDb();
-    const snap = await adminDb.collection('productos').where('disponible', '==', true).limit(maxResultados).get();
-    return snap.docs.map(d => mapProducto(d.data(), d.id));
+    console.warn('[RAG] findNearest Admin SDK no disponible, usando motor coseno:', err?.message);
+  }
+
+  // 2. Motor Resiliente: Similitud Coseno en memoria con Client SDK
+  try {
+    const snap = await getDocs(query(collection(db, 'productos'), where('disponible', '==', true)));
+    const productosConScore = snap.docs.map(docSnap => {
+      const data = docSnap.data();
+      const producto = mapProducto(data, docSnap.id);
+      const vec = extractEmbeddingArray(data.embedding);
+      const score = vec ? cosineSimilarity(queryEmbedding, vec) : 0;
+      return { producto, score };
+    });
+
+    // Ordenar por puntuación semántica descendente
+    productosConScore.sort((a, b) => b.score - a.score);
+
+    // Retornar top resultados con filtro de relevancia
+    const resultados = productosConScore
+      .filter(item => item.score > 0.35)
+      .slice(0, maxResultados)
+      .map(item => item.producto);
+
+    if (resultados.length > 0) return resultados;
+
+    // Si la similitud estricta fue baja, retornar los top sin corte de umbral
+    return productosConScore.slice(0, maxResultados).map(item => item.producto);
+  } catch (err: any) {
+    console.error('[RAG] Fallback por similitud coseno falló:', err);
+    return [];
   }
 }
 
@@ -183,21 +248,28 @@ export async function busquedaSemantica(
  */
 export async function buscar(termino: string, usarIA: boolean): Promise<SearchResult> {
   const inicio = Date.now();
-  const palabras = termino.trim().split(/\s+/);
-  const esConsultaSimple = palabras.length <= 2 || /^\d{6,}$/.test(termino.trim());
+  const terminoLimpio = termino.trim();
 
-  if (esConsultaSimple || !usarIA) {
-    const productos = await busquedaExacta(termino);
+  // Si la IA está deshabilitada o es un código de barras de más de 6 dígitos
+  if (!usarIA || /^\d{6,}$/.test(terminoLimpio)) {
+    const productos = await busquedaExacta(terminoLimpio);
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
   }
 
   try {
-    const embedding = await generarEmbedding(termino);
-    const productos = await busquedaSemantica(embedding);
+    const embedding = await generarEmbedding(terminoLimpio);
+    let productos = await busquedaSemantica(embedding);
+
+    if (productos.length === 0) {
+      productos = await busquedaExacta(terminoLimpio);
+      return { productos, nivel: 1, latencyMs: Date.now() - inicio };
+    }
+
     return { productos, nivel: 2, latencyMs: Date.now() - inicio };
   } catch (err) {
     console.error('[RAG] Nivel 2 falló, haciendo fallback a Nivel 1:', err);
-    const productos = await busquedaExacta(termino);
+    const productos = await busquedaExacta(terminoLimpio);
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
   }
 }
+
