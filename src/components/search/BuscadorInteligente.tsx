@@ -39,6 +39,7 @@ export default function BuscadorInteligente({
   const [iaCombosHabilitada, setIaCombosHabilitada] = useState(false);
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -85,12 +86,20 @@ export default function BuscadorInteligente({
     // Filtrar catálogo principal en el store instantáneamente
     setSearchQuery(terminoLimpio);
 
+    // Cancelar la petición HTTP anterior si aún está en curso
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsLoading(true);
     try {
       const response = await fetch('/api/search-ia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ termino: terminoLimpio }),
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error('Error en búsqueda');
@@ -99,12 +108,15 @@ export default function BuscadorInteligente({
       setResultados(data.productos);
       setNivelUsado(data.nivel);
       setIaHabilitada(Boolean(data.iaHabilitada));
-      // iaCombosHabilitada NO se actualiza desde search-ia (solo desde ia-status al montar)
       setMostrarDropdown(data.productos.length > 0);
-    } catch {
-      setNivelUsado(1);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setNivelUsado(1);
+      }
     } finally {
-      setIsLoading(false);
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
   }, [setSearchQuery]);
 
@@ -112,16 +124,25 @@ export default function BuscadorInteligente({
     const val = e.target.value;
     setInputValue(val);
 
-    // Filtrado local en 0ms
+    // Capa 0: Filtrado local en el store a 0ms (sin costo de API)
     setSearchQuery(val);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (val.trim().length >= 2) {
+    const valLimpia = val.trim();
+    if (valLimpia.length >= 2) {
+      // Debounce inteligente:
+      // - Si la IA está activa y son >= 3 palabras o frase descriptiva: 600ms (cuida cuota de Gemini API)
+      // - Si es término corto / 1-2 palabras: 350ms (respuesta rápida)
+      const palabras = valLimpia.split(/\s+/);
+      const requiereDebounceLargo = iaHabilitada && (palabras.length >= 3 || valLimpia.length >= 15);
+      const tiempoDebounce = requiereDebounceLargo ? 600 : 350;
+
       debounceRef.current = setTimeout(() => {
         realizarBusqueda(val);
-      }, 350);
+      }, tiempoDebounce);
     } else {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
       setMostrarDropdown(false);
     }
   };
@@ -135,6 +156,7 @@ export default function BuscadorInteligente({
   };
 
   const handleLimpiar = () => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     setInputValue('');
     setSearchQuery('');
     setResultados([]);
