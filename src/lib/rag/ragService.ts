@@ -147,20 +147,27 @@ export async function busquedaSemantica(
   queryEmbedding: number[],
   maxResultados = 6
 ): Promise<Producto[]> {
-  const adminDb = getAdminDb();
-  const vectorQuery = adminDb.collection('productos').findNearest({
-    vectorField: 'embedding',
-    queryVector: FieldValue.vector(queryEmbedding.slice(0, 768)),
-    limit: maxResultados,
-    distanceMeasure: 'COSINE',
-  });
+  try {
+    const adminDb = getAdminDb();
+    const vectorQuery = adminDb.collection('productos').findNearest({
+      vectorField: 'embedding',
+      queryVector: FieldValue.vector(queryEmbedding.slice(0, 768)),
+      limit: maxResultados,
+      distanceMeasure: 'COSINE',
+    });
 
-  const snap = await vectorQuery.get();
-  const resultados = snap.docs
-    .map(d => mapProducto(d.data(), d.id))
-    .filter(p => p.disponible);
+    const snap = await vectorQuery.get();
+    const resultados = snap.docs
+      .map(d => mapProducto(d.data(), d.id))
+      .filter(p => p.disponible);
 
-  return resultados;
+    return resultados;
+  } catch (err: any) {
+    console.warn('[RAG] Fallback por índice vectorial en construcción o error:', err?.message);
+    const adminDb = getAdminDb();
+    const snap = await adminDb.collection('productos').where('disponible', '==', true).limit(maxResultados).get();
+    return snap.docs.map(d => mapProducto(d.data(), d.id));
+  }
 }
 
 // ── Router Principal de Búsqueda ─────────────────────────────────────────────
