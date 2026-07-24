@@ -44,13 +44,9 @@ export default function BuscadorInteligente({
   useEffect(() => {
     async function verificarIA() {
       try {
-        const res = await fetch('/api/search-ia', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ termino: 'test' }),
-        });
+        const res = await fetch('/api/ia-status', { cache: 'no-store' });
         if (res.ok) {
-          const data: SearchResult = await res.json();
+          const data = await res.json();
           setIaHabilitada(Boolean(data.iaHabilitada));
         }
       } catch {
