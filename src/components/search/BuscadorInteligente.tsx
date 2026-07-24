@@ -2,15 +2,13 @@
 
 /**
  * BuscadorInteligente.tsx
- * Barra de búsqueda semántica para la Tienda Web.
+ * Barra de búsqueda semántica e inteligente para la Tienda Web.
  *
- * Funciona en 3 modos automáticos:
- *  1. Sin IA (IA deshabilitada): Actualiza searchQuery del store → filtrado local instantáneo.
- *  2. Búsqueda Semántica (IA habilitada, frase >2 palabras): Llama a /api/search-ia con debounce.
- *  3. Armador de Combos: Botón "✨ Crear Combo" que abre el IAComboModal.
- *
- * Siempre muestra resultados como tarjetas visuales en un dropdown,
- * no como texto de chat (máxima eficiencia de conversión).
+ * CARACTERÍSTICAS:
+ *  1. Indicador visual claro cuando la IA está habilitada (badge "✨ Búsqueda Semántica IA Activada").
+ *  2. Disparo por tecla Enter o por botón de clic "Buscar".
+ *  3. Debounce inteligente de 350ms para sugerencias automáticas.
+ *  4. Botón "Armar Combo" para abrir el modal del recomendador en 1-Clic.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -27,13 +25,16 @@ interface SearchResult {
 }
 
 interface BuscadorInteligenteProps {
-  /** Muestra el botón de Armado de Combos si está habilitado */
   mostrarCombos?: boolean;
   onAbrirCombos?: () => void;
   className?: string;
 }
 
-export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombos, className = '' }: BuscadorInteligenteProps) {
+export default function BuscadorInteligente({
+  mostrarCombos = true,
+  onAbrirCombos,
+  className = '',
+}: BuscadorInteligenteProps) {
   const { setSearchQuery, addToConsulta, showToast } = useTiendaStore();
   const [inputValue, setInputValue] = useState('');
   const [resultados, setResultados] = useState<Producto[]>([]);
@@ -44,6 +45,26 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Verificar el estado de la IA al cargar
+  useEffect(() => {
+    async function verificarIA() {
+      try {
+        const res = await fetch('/api/search-ia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ termino: 'test' }),
+        });
+        if (res.ok) {
+          const data: SearchResult = await res.json();
+          setIaHabilitada(data.iaHabilitada);
+        }
+      } catch {
+        setIaHabilitada(false);
+      }
+    }
+    verificarIA();
+  }, []);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -59,7 +80,6 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
   const realizarBusqueda = useCallback(async (termino: string) => {
     const terminoLimpio = termino.trim();
 
-    // Si es muy corto, solo filtrar localmente (Nivel 0)
     if (terminoLimpio.length < 2) {
       setSearchQuery(terminoLimpio);
       setResultados([]);
@@ -84,10 +104,9 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
       setIaHabilitada(data.iaHabilitada);
       setMostrarDropdown(data.productos.length > 0);
 
-      // También actualizamos el store para que el catálogo principal se filtre
+      // Actualizar catálogo principal
       setSearchQuery(terminoLimpio);
-    } catch (err) {
-      // Fallback silencioso: solo actualizar el store
+    } catch {
       setSearchQuery(terminoLimpio);
     } finally {
       setIsLoading(false);
@@ -98,11 +117,18 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
     const val = e.target.value;
     setInputValue(val);
 
-    // Debounce de 350ms para no saturar la API
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       realizarBusqueda(val);
     }, 350);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      realizarBusqueda(inputValue);
+    }
   };
 
   const handleLimpiar = () => {
@@ -124,23 +150,40 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
 
   return (
     <div ref={dropdownRef} className={`relative w-full max-w-2xl mx-auto ${className}`}>
+      
+      {/* ── Badge visual de IA Activada ───────────────────────────────── */}
+      {iaHabilitada && (
+        <div className="flex items-center justify-between px-1 mb-1.5">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gradient-to-r from-violet-500/10 to-indigo-500/10 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
+            <Sparkles className="w-3 h-3 text-violet-500 animate-pulse" />
+            Búsqueda Semántica IA Activada
+          </span>
+          {nivelUsado === 2 && (
+            <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+              <Zap className="w-3 h-3" /> Gemini 3072D Vector Search
+            </span>
+          )}
+        </div>
+      )}
+
       {/* ── Barra de Búsqueda ───────────────────────────────────────── */}
       <div className="relative group">
-        {/* Glow dinámico: ámbar sin IA, violeta con IA */}
+        {/* Glow dinámico */}
         <div
           className={`absolute -inset-0.5 rounded-2xl blur transition-all duration-500 ${
-            iaHabilitada && inputValue.trim().split(' ').length >= 3
-              ? 'bg-gradient-to-r from-violet-400 to-indigo-500 opacity-50 group-focus-within:opacity-80'
+            iaHabilitada
+              ? 'bg-gradient-to-r from-violet-400 to-indigo-500 opacity-30 group-focus-within:opacity-70'
               : 'bg-gradient-to-r from-amber-400 to-orange-500 opacity-20 group-focus-within:opacity-50'
           }`}
         />
 
         <div className="relative flex items-center w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          
           {/* Icono de búsqueda / IA */}
           <div className="pl-4 pr-2 flex-shrink-0">
             {isLoading ? (
-              <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
-            ) : nivelUsado === 2 ? (
+              <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
+            ) : iaHabilitada ? (
               <Sparkles className="w-5 h-5 text-violet-500" />
             ) : (
               <Search className="w-5 h-5 text-slate-400" />
@@ -152,8 +195,13 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
             type="text"
             value={inputValue}
             onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             onFocus={() => resultados.length > 0 && setMostrarDropdown(true)}
-            placeholder={iaHabilitada ? '✨ Busca o describe lo que necesitas...' : 'Busca productos, abarrotes, bebidas...'}
+            placeholder={
+              iaHabilitada
+                ? '✨ Busca o describe lo que necesitas (Ej: algo dulce para el té)...'
+                : 'Busca productos, abarrotes, bebidas...'
+            }
             className="w-full py-3.5 px-2 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none text-sm"
             autoComplete="off"
           />
@@ -162,19 +210,39 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
           <div className="flex items-center gap-1 pr-2 flex-shrink-0">
             {inputValue && (
               <button
+                type="button"
                 onClick={handleLimpiar}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
                 title="Limpiar búsqueda"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
 
+            {/* Botón Consultar / Buscar */}
+            <button
+              type="button"
+              onClick={() => {
+                if (debounceRef.current) clearTimeout(debounceRef.current);
+                realizarBusqueda(inputValue);
+              }}
+              className={`p-2 rounded-xl text-white font-medium text-xs flex items-center gap-1 transition-all ${
+                iaHabilitada
+                  ? 'bg-violet-600 hover:bg-violet-700 shadow-sm shadow-violet-300 dark:shadow-none'
+                  : 'bg-amber-500 hover:bg-amber-600 shadow-sm'
+              }`}
+              title="Presiona Enter o haz clic para buscar"
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden sm:inline">Buscar</span>
+            </button>
+
             {/* Botón "Armar Combo" — solo visible si IA habilitada */}
             {mostrarCombos && iaHabilitada && onAbrirCombos && (
               <button
+                type="button"
                 onClick={onAbrirCombos}
-                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-violet-500 to-indigo-600 text-white text-xs font-bold rounded-xl hover:from-violet-600 hover:to-indigo-700 transition-all shadow-sm shadow-violet-200 dark:shadow-violet-900 ml-1"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-700 text-white text-xs font-bold rounded-xl hover:from-violet-700 hover:to-indigo-800 transition-all shadow-sm shadow-violet-200 dark:shadow-violet-900 ml-1"
                 title="Crear combo personalizado con IA"
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -185,30 +253,14 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
         </div>
       </div>
 
-      {/* ── Etiqueta de nivel IA (solo en desarrollo o para debug) ───── */}
-      {nivelUsado && inputValue && (
-        <div className="absolute -bottom-6 right-0 flex items-center gap-1">
-          {nivelUsado === 2 ? (
-            <span className="text-[10px] text-violet-500 font-bold flex items-center gap-0.5">
-              <Sparkles className="w-2.5 h-2.5" /> Búsqueda Semántica
-            </span>
-          ) : (
-            <span className="text-[10px] text-slate-400 font-medium flex items-center gap-0.5">
-              <Zap className="w-2.5 h-2.5" /> Búsqueda rápida
-            </span>
-          )}
-        </div>
-      )}
-
       {/* ── Dropdown de Resultados ───────────────────────────────────── */}
       {mostrarDropdown && resultados.length > 0 && (
         <div className="absolute top-full mt-3 left-0 right-0 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
-          {/* Header del dropdown */}
           <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">
               {resultados.length} resultado{resultados.length !== 1 ? 's' : ''}
               {nivelUsado === 2 && (
-                <span className="ml-2 text-violet-500">✨ Semántico</span>
+                <span className="ml-2 text-violet-500 font-semibold">✨ Búsqueda Semántica</span>
               )}
             </span>
             <button
@@ -219,7 +271,6 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
             </button>
           </div>
 
-          {/* Lista de productos */}
           <div className="max-h-72 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800">
             {resultados.map((producto) => (
               <button
@@ -227,7 +278,6 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
                 onClick={() => handleSeleccionarProducto(producto)}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left group"
               >
-                {/* Imagen */}
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
                   {producto.imagenUrl ? (
                     <Image
@@ -242,7 +292,6 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
                   )}
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
                     {producto.nombre}
@@ -250,7 +299,6 @@ export default function BuscadorInteligente({ mostrarCombos = true, onAbrirCombo
                   <p className="text-xs text-slate-500 truncate">{producto.categoria}</p>
                 </div>
 
-                {/* Precio + CTA */}
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   {producto.precio > 0 && (
                     <span className="text-sm font-bold text-emerald-600">
