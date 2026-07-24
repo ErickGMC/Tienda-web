@@ -79,10 +79,15 @@ function mapProducto(docData: any, id: string): Producto {
  */
 export async function getIAConfig(): Promise<IAConfig> {
   try {
-    const adminDb = getAdminDb();
-    const snap = await adminDb.collection('web_config').doc('ia').get();
-    if (snap.exists) {
-      return { iaBusquedaHabilitada: Boolean(snap.data()?.iaBusquedaHabilitada) };
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'minimarket-flor-8d7f9';
+    const res = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/web_config/ia`,
+      { cache: 'no-store' }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const enabled = Boolean(data?.fields?.iaBusquedaHabilitada?.booleanValue);
+      return { iaBusquedaHabilitada: enabled };
     }
   } catch (e) {
     console.warn('[RAG] Error leyendo web_config/ia:', e);
