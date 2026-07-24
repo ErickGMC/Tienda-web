@@ -4,6 +4,7 @@ import { WebConfig, EmpresaConfig } from './actions'
 
 interface TiendaState {
   searchQuery: string;
+  ragProductos: Producto[] | null;
   selectedCategory: CategoriaProducto | 'Todas';
   consultaList: Producto[];
   showPrices: boolean;
@@ -14,6 +15,7 @@ interface TiendaState {
   toastMessage: string;
   isToastVisible: boolean;
   setSearchQuery: (query: string) => void;
+  setRagProductos: (prods: Producto[] | null) => void;
   setSelectedCategory: (category: CategoriaProducto | 'Todas') => void;
   addToConsulta: (producto: Producto) => void;
   removeFromConsulta: (id: string) => void;
@@ -28,6 +30,7 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useTiendaStore = create<TiendaState>((set) => ({
   searchQuery: '',
+  ragProductos: null,
   selectedCategory: 'Todas',
   consultaList: [],
   showPrices: false,
@@ -36,7 +39,11 @@ export const useTiendaStore = create<TiendaState>((set) => ({
   empresa: null,
   toastMessage: '',
   isToastVisible: false,
-  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchQuery: (query) => set((state) => ({
+    searchQuery: query,
+    ragProductos: query.trim() === '' ? null : state.ragProductos,
+  })),
+  setRagProductos: (prods) => set({ ragProductos: prods }),
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   addToConsulta: (producto) => set((state) => {
     if (!state.consultaList.find(p => p.id === producto.id)) {

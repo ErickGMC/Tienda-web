@@ -20,7 +20,7 @@ const CATEGORIAS: (CategoriaProducto | 'Todas')[] = [
 ];
 
 export default function TiendaCatalog({ productos, banners, config, empresa }: TiendaCatalogProps) {
-  const { searchQuery, selectedCategory, setSelectedCategory, setShowPrices, setConfig } = useTiendaStore();
+  const { searchQuery, selectedCategory, setSelectedCategory, setShowPrices, setConfig, ragProductos } = useTiendaStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Drag to scroll logic optimized with useRef (prevents re-renders)
@@ -85,7 +85,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
     }, 50);
   };
 
-  // Sincronizar la configuración general
+  // Guardar configuración inicial al cargar la página
   useEffect(() => {
     if (config && config.mostrarPrecios !== undefined) {
       setShowPrices(config.mostrarPrecios);
@@ -96,10 +96,16 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
 
   // Filtrado optimizado con useMemo
   const productosFiltrados = useMemo(() => {
+    // Si la IA de búsqueda semántica entregó resultados RAG para esta consulta, priorizarlos en la cuadrícula principal
+    if (searchQuery.trim() && ragProductos && ragProductos.length > 0) {
+      return ragProductos;
+    }
+
     const filtrados = productos.filter((p) => {
       const matchCategoria = selectedCategory === 'Todas' || p.categoria === selectedCategory;
       const matchSearch = p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          p.descripcion.toLowerCase().includes(searchQuery.toLowerCase());
+                          (p.descripcion && p.descripcion.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                          (p.categoria && p.categoria.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchCategoria && matchSearch;
     });
 
@@ -108,7 +114,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
       if (!a.destacado && b.destacado) return 1;
       return 0;
     });
-  }, [productos, selectedCategory, searchQuery]);
+  }, [productos, selectedCategory, searchQuery, ragProductos]);
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">

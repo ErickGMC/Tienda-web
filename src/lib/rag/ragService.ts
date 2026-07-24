@@ -111,20 +111,18 @@ export async function busquedaExacta(termino: string, maxResultados = 8): Promis
   const terminoLower = termino.toLowerCase().trim();
   if (!terminoLower) return [];
 
-  const inicio = terminoLower;
-  const fin = terminoLower + '\uf8ff';
-
-  const q = query(
-    collection(db, 'productos'),
-    where('disponible', '==', true),
-    where('nombre', '>=', inicio),
-    where('nombre', '<=', fin),
-    orderBy('nombre'),
-    limit(maxResultados)
-  );
-
-  const snap = await getDocs(q);
-  return snap.docs.map(d => mapProducto(d.data(), d.id));
+  try {
+    const snap = await getDocs(query(collection(db, 'productos'), where('disponible', '==', true)));
+    const todos = snap.docs.map(d => mapProducto(d.data(), d.id));
+    return todos.filter(p =>
+      p.nombre.toLowerCase().includes(terminoLower) ||
+      (p.descripcion && p.descripcion.toLowerCase().includes(terminoLower)) ||
+      (p.categoria && p.categoria.toLowerCase().includes(terminoLower))
+    ).slice(0, maxResultados);
+  } catch (e) {
+    console.error('[busquedaExacta] Error:', e);
+    return [];
+  }
 }
 
 // ── Utilidades RAG / Similitud Coseno ───────────────────────────────────────

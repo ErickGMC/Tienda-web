@@ -30,7 +30,7 @@ export default function BuscadorInteligente({
   onAbrirCombos,
   className = '',
 }: BuscadorInteligenteProps) {
-  const { setSearchQuery, addToConsulta, showToast } = useTiendaStore();
+  const { setSearchQuery, setRagProductos, addToConsulta, showToast } = useTiendaStore();
   const [inputValue, setInputValue] = useState('');
   const [resultados, setResultados] = useState<Producto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,6 +77,7 @@ export default function BuscadorInteligente({
 
     if (terminoLimpio.length < 2) {
       setSearchQuery(terminoLimpio);
+      setRagProductos(null);
       setResultados([]);
       setMostrarDropdown(false);
       setNivelUsado(null);
@@ -109,6 +110,8 @@ export default function BuscadorInteligente({
       setNivelUsado(data.nivel);
       setIaHabilitada(Boolean(data.iaHabilitada));
       setMostrarDropdown(data.productos.length > 0);
+      // Compartir los resultados semánticos con la cuadrícula principal del catálogo
+      setRagProductos(data.productos.length > 0 ? data.productos : null);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         setNivelUsado(1);
@@ -118,7 +121,7 @@ export default function BuscadorInteligente({
         setIsLoading(false);
       }
     }
-  }, [setSearchQuery]);
+  }, [setSearchQuery, setRagProductos]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
