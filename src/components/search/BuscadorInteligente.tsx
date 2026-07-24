@@ -127,33 +127,20 @@ export default function BuscadorInteligente({
     const val = e.target.value;
     setInputValue(val);
 
-    // Capa 0: Filtrado local en el store a 0ms (sin costo de API)
-    setSearchQuery(val);
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    const valLimpia = val.trim();
-    if (valLimpia.length >= 2) {
-      // Debounce inteligente:
-      // - Si la IA está activa y son >= 3 palabras o frase descriptiva: 600ms (cuida cuota de Gemini API)
-      // - Si es término corto / 1-2 palabras: 350ms (respuesta rápida)
-      const palabras = valLimpia.split(/\s+/);
-      const requiereDebounceLargo = iaHabilitada && (palabras.length >= 3 || valLimpia.length >= 15);
-      const tiempoDebounce = requiereDebounceLargo ? 400 : 300;
-
-      debounceRef.current = setTimeout(() => {
-        realizarBusqueda(val);
-      }, tiempoDebounce);
-    } else {
+    // Si el usuario borra completamente el texto, limpiar resultados
+    if (val.trim() === '') {
       if (abortControllerRef.current) abortControllerRef.current.abort();
+      setSearchQuery('');
+      setRagProductos(null);
+      setResultados([]);
       setMostrarDropdown(false);
+      setNivelUsado(null);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (debounceRef.current) clearTimeout(debounceRef.current);
       realizarBusqueda(inputValue);
     }
   };
