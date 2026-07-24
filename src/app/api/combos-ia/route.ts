@@ -74,11 +74,11 @@ export async function POST(request: Request) {
       )
       .join('\n');
 
-    // 4. Invocar Gemini 1.5 Flash para armar el combo
+    // 4. Invocar Gemini 2.5 Flash para armar el combo
     const apiKey = process.env.GEMINI_API_KEY || ['AQ.', 'Ab8RN6KY9zJuP7BjO-ppcsm4pwjHytFAeRfikDS_ln2zKAiarg'].join('');
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_GENERATIVE_MODEL || 'gemini-1.5-flash',
+      model: process.env.GEMINI_GENERATIVE_MODEL || 'gemini-2.5-flash',
     });
 
     const prompt = `
