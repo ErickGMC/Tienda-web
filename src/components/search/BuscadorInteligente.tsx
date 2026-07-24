@@ -2,13 +2,13 @@
 
 /**
  * BuscadorInteligente.tsx
- * Barra de búsqueda semántica e inteligente para la Tienda Web.
+ * Barra de búsqueda ultra-eficiente para la Tienda Web.
  *
- * CARACTERÍSTICAS:
- *  1. Indicador visual claro cuando la IA está habilitada (badge "✨ Búsqueda Semántica IA Activada").
- *  2. Disparo por tecla Enter o por botón de clic "Buscar".
- *  3. Debounce inteligente de 350ms para sugerencias automáticas.
- *  4. Botón "Armar Combo" para abrir el modal del recomendador en 1-Clic.
+ * ESTRATEGIA DE EFICIENCIA HÍBRIDA (Máxima velocidad, $0 desperdicio):
+ *  1. Búsqueda por palabras cortas / nombres ("leche", "arroz"):
+ *     Filtra localmente a 0ms de latencia ($0 costo API).
+ *  2. Frases complejas / Intención ("algo para el desayuno", "snacks para ver películas"):
+ *     Activa la búsqueda semántica vectorial (Nivel 2) tras una pausa de 450ms o al presionar Enter/Buscar.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -46,7 +46,7 @@ export default function BuscadorInteligente({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Verificar el estado de la IA al cargar
+  // Verificar estado de la IA al cargar
   useEffect(() => {
     async function verificarIA() {
       try {
@@ -77,7 +77,7 @@ export default function BuscadorInteligente({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const realizarBusqueda = useCallback(async (termino: string) => {
+  const realizarBusqueda = useCallback(async (termino: string, forzarIA = false) => {
     const terminoLimpio = termino.trim();
 
     if (terminoLimpio.length < 2) {
@@ -88,6 +88,20 @@ export default function BuscadorInteligente({
       return;
     }
 
+    // Filtrar catálogo principal en el store instantáneamente
+    setSearchQuery(terminoLimpio);
+
+    const palabras = terminoLimpio.split(/\s+/);
+    const esFraseLarga = palabras.length >= 3;
+
+    // Si la IA no está habilitada o es una palabra simple (sin forzar), usar filtrado local directo ($0 costo)
+    if (!iaHabilitada || (!esFraseLarga && !forzarIA)) {
+      setNivelUsado(1);
+      setMostrarDropdown(false);
+      return;
+    }
+
+    // Nivel 2: Búsqueda Semántica Vectorial (solo si es frase larga o presiona Enter/Buscar)
     setIsLoading(true);
     try {
       const response = await fetch('/api/search-ia', {
@@ -96,38 +110,45 @@ export default function BuscadorInteligente({
         body: JSON.stringify({ termino: terminoLimpio }),
       });
 
-      if (!response.ok) throw new Error('Error en búsqueda');
+      if (!response.ok) throw new Error('Error en búsqueda semántica');
 
       const data: SearchResult = await response.json();
       setResultados(data.productos);
       setNivelUsado(data.nivel);
       setIaHabilitada(data.iaHabilitada);
       setMostrarDropdown(data.productos.length > 0);
-
-      // Actualizar catálogo principal
-      setSearchQuery(terminoLimpio);
     } catch {
-      setSearchQuery(terminoLimpio);
+      setNivelUsado(1);
     } finally {
       setIsLoading(false);
     }
-  }, [setSearchQuery]);
+  }, [iaHabilitada, setSearchQuery]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputValue(val);
 
+    // Filtrar localmente de inmediato (0ms latencia)
+    setSearchQuery(val);
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      realizarBusqueda(val);
-    }, 350);
+
+    // Solo si es una frase larga (>2 palabras), activar la IA tras 450ms
+    const palabras = val.trim().split(/\s+/);
+    if (iaHabilitada && palabras.length >= 3) {
+      debounceRef.current = setTimeout(() => {
+        realizarBusqueda(val, true);
+      }, 450);
+    } else {
+      setMostrarDropdown(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      realizarBusqueda(inputValue);
+      realizarBusqueda(inputValue, true);
     }
   };
 
@@ -159,8 +180,8 @@ export default function BuscadorInteligente({
             Búsqueda Semántica IA Activada
           </span>
           {nivelUsado === 2 && (
-            <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Gemini 3072D Vector Search
+            <span className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold flex items-center gap-1">
+              <Zap className="w-3 h-3" /> Vector RAG Activo
             </span>
           )}
         </div>
@@ -168,7 +189,6 @@ export default function BuscadorInteligente({
 
       {/* ── Barra de Búsqueda ───────────────────────────────────────── */}
       <div className="relative group">
-        {/* Glow dinámico */}
         <div
           className={`absolute -inset-0.5 rounded-2xl blur transition-all duration-500 ${
             iaHabilitada
@@ -179,7 +199,6 @@ export default function BuscadorInteligente({
 
         <div className="relative flex items-center w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
           
-          {/* Icono de búsqueda / IA */}
           <div className="pl-4 pr-2 flex-shrink-0">
             {isLoading ? (
               <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
@@ -199,14 +218,13 @@ export default function BuscadorInteligente({
             onFocus={() => resultados.length > 0 && setMostrarDropdown(true)}
             placeholder={
               iaHabilitada
-                ? '✨ Busca o describe lo que necesitas (Ej: algo dulce para el té)...'
+                ? '✨ Busca o describe lo que necesitas (Ej: algo para el desayuno)...'
                 : 'Busca productos, abarrotes, bebidas...'
             }
             className="w-full py-3.5 px-2 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none text-sm"
             autoComplete="off"
           />
 
-          {/* Botones de acción */}
           <div className="flex items-center gap-1 pr-2 flex-shrink-0">
             {inputValue && (
               <button
@@ -219,30 +237,30 @@ export default function BuscadorInteligente({
               </button>
             )}
 
-            {/* Botón Consultar / Buscar */}
+            {/* Botón Buscar / Consultar */}
             <button
               type="button"
               onClick={() => {
                 if (debounceRef.current) clearTimeout(debounceRef.current);
-                realizarBusqueda(inputValue);
+                realizarBusqueda(inputValue, true);
               }}
-              className={`p-2 rounded-xl text-white font-medium text-xs flex items-center gap-1 transition-all ${
+              className={`px-3 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                 iaHabilitada
-                  ? 'bg-violet-600 hover:bg-violet-700 shadow-sm shadow-violet-300 dark:shadow-none'
+                  ? 'bg-gradient-to-r from-violet-600 to-indigo-700 hover:from-violet-700 hover:to-indigo-800 shadow-sm shadow-violet-300 dark:shadow-none'
                   : 'bg-amber-500 hover:bg-amber-600 shadow-sm'
               }`}
               title="Presiona Enter o haz clic para buscar"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Buscar</span>
             </button>
 
-            {/* Botón "Armar Combo" — solo visible si IA habilitada */}
+            {/* Botón Armar Combo */}
             {mostrarCombos && iaHabilitada && onAbrirCombos && (
               <button
                 type="button"
                 onClick={onAbrirCombos}
-                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-700 text-white text-xs font-bold rounded-xl hover:from-violet-700 hover:to-indigo-800 transition-all shadow-sm shadow-violet-200 dark:shadow-violet-900 ml-1"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all shadow-sm shadow-emerald-200 dark:shadow-emerald-900 ml-1 cursor-pointer"
                 title="Crear combo personalizado con IA"
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -253,7 +271,7 @@ export default function BuscadorInteligente({
         </div>
       </div>
 
-      {/* ── Dropdown de Resultados ───────────────────────────────────── */}
+      {/* Dropdown de Resultados */}
       {mostrarDropdown && resultados.length > 0 && (
         <div className="absolute top-full mt-3 left-0 right-0 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
           <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
