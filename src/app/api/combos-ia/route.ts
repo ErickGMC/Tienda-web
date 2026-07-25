@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
 
     const prompt = `
-Eres un experto chef y comerciante de minimarket peruano. Tu objetivo es armar un combo con LÓGICA GASTRONÓMICA PERUANA RIGUROSA, eligiendo del catálogo los ingredientes principales, verduras, aderezos tradicionales y la guarnición adecuada para la receta solicitada.
+Eres un experto chef y comerciante de minimarket peruano. Tu objetivo es armar un combo con LÓGICA GASTRONÓMICA PERUANA RIGUROSA, seleccionando únicamente los ingredientes que corresponden a la receta tradicional.
 
 SOLICITUD DEL CLIENTE:
 "${solicitud}"
@@ -90,10 +90,18 @@ SOLICITUD DEL CLIENTE:
 CATÁLOGO DISPONIBLE (solo usar estos productos):
 ${catalogoContexto}
 
-REGLAS OBLIGATORIAS DE COHERENCIA GASTRONÓMICA Y VENTAS:
-1. Lógica Culinaria Estricta (Sin Mezclas Incoherentes): Selecciona productos que tengan 100% de coherencia gastronómica con la receta peruana tradicional. Para Estofado de Pollo incluye pollo, papa, zanahoria, tomate, arvejas y laurel/hongo para el aderezo, acompañado de arroz blanco. Está estrictamente PROHIBIDO incluir ingredientes o guarniciones incoherentes que no pertenezcan al plato (ej: NUNCA agregues fideos ni huevo duro a un estofado de pollo, ni arroz a una sopa de fideos).
-2. Coherencia Total en la Descripción: Cada producto incluido en la lista "productos" DEBE ESTAR MENCIONADO EXPLÍCITAMENTE en el texto de la "descripcion". Si incluyes una bebida (ej. Inca Kola) o un acompañamiento, explica claramente en la descripción por qué está incluido. NUNCA agregues un producto a la lista si no lo mencionas en la descripción.
-3. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
+GUÍA GASTRONÓMICA PERUANA DE REFERENCIA (Respetar estrictamente la tradición):
+- Estofado de Pollo: Pollo, Papa Blanca, Zanahoria, Tomate, Arveja Fresca, Laurel y Hongo, Arroz. (NUNCA incluir Zapallo, Fideos ni Huevo).
+- Locro de Zapallo: Zapallo Macre, Papa Blanca, Leche, Huevo, Queso, Arroz. (NUNCA incluir Tomate ni Fideos).
+- Papa a la Huancaína: Papa Blanca, Leche, Huevo, Aceituna Entera, Queso. (NUNCA incluir Fideos, Zapallo ni Arroz).
+- Tallarines Rojos: Fideos, Tomate, Pollo/Carne, Laurel y Hongo, Queso Fresco, Papa Blanca. (NUNCA incluir Arroz ni Zapallo).
+- Caldo / Sopa: Fideos/Papa, Pollo/Carne, Huevo. (NUNCA incluir Arroz ni Zapallo).
+
+REGLAS OBLIGATORIAS:
+1. Fidelidad Culinaria 100%: Si la solicitud coincide con uno de los platos tradicionales peruanos, selecciona EXCLUSIVAMENTE los productos de tu catálogo que correspondan a esa receta. Está estrictamente PROHIBIDO agregar verduras o ingredientes de otros platos (ej: NO pongas Zapallo ni Huevo en un Estofado de Pollo; NO pongas Fideos en un Estofado; NO pongas Tomate en un Locro).
+2. Si un ingrediente tradicional (ej. Arveja Fresca o Arroz) está disponible en el catálogo, DEBES INCLUIRLO prioritariamente.
+3. Coherencia Total en la Descripción: MENCIONA EXPLÍCITAMENTE en la "descripcion" CADA UNO de los productos incluidos en la lista "productos".
+4. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
 {
