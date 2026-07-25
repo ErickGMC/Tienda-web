@@ -138,7 +138,7 @@ export async function POST(request: Request) {
 
   // 3. Generar embedding con Gemini
   const apiKey = process.env.GEMINI_API_KEY;
-  const modelo = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+  const modelo = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
 
   if (!apiKey) {
     console.error('[embed-producto] GEMINI_API_KEY no configurada.');

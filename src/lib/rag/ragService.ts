@@ -192,7 +192,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  */
 export async function generarEmbedding(texto: string): Promise<number[]> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const modelo = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+  const modelo = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
 
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY no configurada');

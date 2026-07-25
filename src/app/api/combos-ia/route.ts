@@ -74,12 +74,12 @@ export async function POST(request: Request) {
       )
       .join('\n');
 
-    // 4. Invocar Gemini 2.5 Flash para armar el combo
+    // 4. Invocar Gemini (Modelo Principal con Respaldo Automático)
     const apiKey = process.env.GEMINI_API_KEY || ['AQ.', 'Ab8RN6KY9zJuP7BjO-ppcsm4pwjHytFAeRfikDS_ln2zKAiarg'].join('');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_GENERATIVE_MODEL || 'gemini-2.5-flash',
-    });
+
+    const primaryModelName = process.env.GEMINI_GENERATIVE_MODEL || 'gemini-3.1-flash-lite';
+    const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
 
     const prompt = `
 Eres el asistente de compras de un minimarket peruano.
@@ -104,7 +104,16 @@ INSTRUCCIONES:
 }
 `;
 
-    const result = await model.generateContent(prompt);
+    let result;
+    try {
+      const primaryModel = genAI.getGenerativeModel({ model: primaryModelName });
+      result = await primaryModel.generateContent(prompt);
+    } catch (err: any) {
+      console.warn(`[combos-ia] ⚠️ Error con modelo principal (${primaryModelName}): ${err.message}. Reintentando con modelo de respaldo (${fallbackModelName})...`);
+      const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
+      result = await fallbackModel.generateContent(prompt);
+    }
+
     const rawText = result.response.text().trim();
 
     // 5. Parsear respuesta JSON del LLM (con limpieza de markdown blocks)
