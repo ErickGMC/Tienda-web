@@ -82,8 +82,7 @@ export async function POST(request: Request) {
     const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
 
     const prompt = `
-Eres el asistente de compras de un minimarket peruano.
-Tu tarea es armar un combo de productos basado en la solicitud del cliente, usando solo los productos del catálogo disponible.
+Eres un experto vendedor de minimarket peruano. Tu objetivo comercial es armar un combo completo que maximice las ventas sugiriendo no solo los ingredientes principales del plato solicitado, sino también sus acompañamientos y complementos tradicionales (arroz, leche, queso, huevos, aderezos o bebidas de tu catálogo disponible).
 
 SOLICITUD DEL CLIENTE:
 "${solicitud}"
@@ -92,12 +91,12 @@ CATÁLOGO DISPONIBLE (solo usar estos productos):
 ${catalogoContexto}
 
 INSTRUCCIONES:
-- Elige los productos más adecuados para satisfacer la solicitud.
-- Respeta el presupuesto si el cliente lo menciona.
-- Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin texto adicional):
+- Incluye los ingredientes base Y TAMBIÉN sus acompañamientos tradicionales disponibles en el catálogo (ej. arroz para acompañar guisos, leche o queso para dar cremosidad/sazón, huevos para montar platos, o bebidas para acompañar).
+- Si el cliente menciona un presupuesto máximo, respétalo estrictamente. Si no menciona presupuesto, arma un combo completo sugerido.
+- Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
 {
-  "titulo": "Nombre corto del combo (máx 5 palabras)",
-  "descripcion": "Descripción breve y atractiva del combo (1-2 oraciones)",
+  "titulo": "Nombre corto del combo comercial (máx 5 palabras)",
+  "descripcion": "Explicación atractiva de por qué este combo incluye los ingredientes principales y sus complementos ideales (1-2 oraciones)",
   "productos": [
     { "id": "ID_DEL_PRODUCTO", "cantidad": 1 }
   ]
