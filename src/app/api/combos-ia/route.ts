@@ -53,9 +53,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 });
     }
 
-    // 2. Generar embedding de la solicitud y recuperar productos relevantes
+    // 2. Generar embedding de la solicitud y recuperar candidatos del catálogo (pool ampliado a 35)
     const embedding = await generarEmbedding(solicitud);
-    const productosRelevantes = await busquedaSemantica(embedding, 12);
+    const productosRelevantes = await busquedaSemantica(embedding, 35);
 
     if (productosRelevantes.length === 0) {
       return NextResponse.json({
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
 
     const prompt = `
-Eres un experto chef y comerciante de minimarket peruano. Tu objetivo es armar un combo con LÓGICA GASTRONÓMICA RIGUROSA, eligiendo del catálogo los ingredientes principales, insumos para la salsa/aderezo y las guarniciones/decoraciones tradicionales peruanas del plato solicitado (ej: aceitunas, huevos duros, arroz, leche, etc.).
+Eres un experto chef y comerciante de minimarket peruano. Tu objetivo es armar un combo con LÓGICA GASTRONÓMICA PERUANA RIGUROSA, eligiendo del catálogo los ingredientes principales, verduras, aderezos tradicionales y la guarnición adecuada para la receta solicitada.
 
 SOLICITUD DEL CLIENTE:
 "${solicitud}"
@@ -91,8 +91,8 @@ CATÁLOGO DISPONIBLE (solo usar estos productos):
 ${catalogoContexto}
 
 REGLAS OBLIGATORIAS DE COHERENCIA GASTRONÓMICA Y VENTAS:
-1. Lógica Gastronómica Culinaria: Selecciona productos que tengan 100% de coherencia culinaria con la receta tradicional peruana. Revisa bien el catálogo para no omitir guarniciones tradicionales disponibles (como aceitunas o huevos).
-2. Coherencia Total en la Descripción: Cada producto incluido en la lista "productos" DEBE ESTAR MENCIONADO EXPLÍCITAMENTE en el texto de la "descripcion". Si agregas una bebida (ej. Inca Kola) o un acompañamiento, explica claramente en la descripción por qué está incluido (ej: "...e incluye una helada Inca Kola para acompañar tu comida"). NUNCA agregues un producto a la lista si no lo mencionas en la descripción.
+1. Lógica Culinaria Estricta (Sin Mezclas Incoherentes): Selecciona productos que tengan 100% de coherencia gastronómica con la receta peruana tradicional. Para Estofado de Pollo incluye pollo, papa, zanahoria, tomate, arvejas y laurel/hongo para el aderezo, acompañado de arroz blanco. Está estrictamente PROHIBIDO incluir ingredientes o guarniciones incoherentes que no pertenezcan al plato (ej: NUNCA agregues fideos ni huevo duro a un estofado de pollo, ni arroz a una sopa de fideos).
+2. Coherencia Total en la Descripción: Cada producto incluido en la lista "productos" DEBE ESTAR MENCIONADO EXPLÍCITAMENTE en el texto de la "descripcion". Si incluyes una bebida (ej. Inca Kola) o un acompañamiento, explica claramente en la descripción por qué está incluido. NUNCA agregues un producto a la lista si no lo mencionas en la descripción.
 3. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
