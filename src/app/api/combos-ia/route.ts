@@ -82,7 +82,11 @@ export async function POST(request: Request) {
     const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
 
     const prompt = `
-Eres un chef peruano especialista exclusivamente en Gastronomía Limeña Criolla Tradicional (Lima, Perú) y asistente comercial inteligente. Tu objetivo es armar un combo rigurosamente adaptado a las costumbres gastronómicas de Lima, Perú.
+ROL Y PERSONAJE:
+Eres un comerciante y chef experto nacido y criado en Lima, Perú. Conoces al detalle la cultura, costumbres, gastronomía criolla, modismos culinarios y hábitos de consumo del limeño de a pie.
+
+OBJETIVO GENERAL:
+Armar combos de compra 100% coherentes con las costumbres, cultura y tradición de Lima, Perú, respondiendo a CUALQUIER solicitud del cliente (recetas, almuerzos, desayunos, fiestas, loncheras escolares, limpieza de casa, ferretería, etc.).
 
 SOLICITUD DEL CLIENTE:
 "${solicitud}"
@@ -90,23 +94,24 @@ SOLICITUD DEL CLIENTE:
 CATÁLOGO DISPONIBLE (solo usar estos productos):
 ${catalogoContexto}
 
-🇵🇪 RECETARIO RIGUROSO Y TRADICIÓN GASTRONÓMICA LIMEÑA CRIOLLA (LIMA, PERÚ):
-- Tallarines Rojos Limeños:
-  * INGREDIENTES MANDATORIOS DE TUCO LIMEÑO: Fideos (Don Vittorio / San Jorge), Pollo o Carne, Tomate, Zanahoria Fresca, "Laurel y Hongo" (OBLIGATORIO para el tuco limeño).
-  * COMPLEMENTOS PERMITIDOS LIMEÑOS: Queso Fresco (rallado), Papa Blanca (papa a la huancaína), Inca Kola.
-  * PROHIBICIÓN ABSOLUTA EN LIMA: PROHIBIDO INCLUIR HUEVO DE GALLINA. En la gastronomía limeña tradicional los tallarines rojos JAMÁS llevan huevo duro. NUNCA selecciones Huevo de Gallina para este plato.
+MARCO DE IDENTIDAD CULTURAL Y COSTUMBRES LIMEÑAS (Aplica a CUALQUIER consulta de forma universal):
 
-- Estofado de Pollo Limeño: Pollo, Papa Blanca, Zanahoria, Tomate, Arveja Fresca, Laurel y Hongo, Arroz. (PROHIBIDO: Fideos, Huevo de Gallina, Zapallo).
-- Locro de Zapallo Limeño: Zapallo Macre, Papa Blanca, Leche, Huevo de Gallina, Queso Fresco, Arroz. (PROHIBIDO: Tomate, Fideos).
-- Papa a la Huancaína Limeña: Papa Blanca, Leche, Huevo de Gallina, Aceituna, Queso. (PROHIBIDO: Fideos, Zapallo, Arroz).
+1. GASTRONOMÍA Y RECETAS LIMEÑAS CRIOLLAS:
+   - Respetar la autenticidad estricta de la sazón criolla de Lima:
+     * Los tuco y aderezos limeños tradicionales (Tallarines Rojos, Estofados, Secos) llevan infaltablemente "Laurel y Hongo" si está disponible en el catálogo.
+     * NUNCA distorsionar las recetas criollas agregando insumos ajenos a la costumbre limeña (ej: En Lima los Tallarines Rojos JAMÁS llevan huevo duro; el Estofado NO lleva fideos ni zapallo; el Locro NO lleva tomate; la Huancaína NO lleva fideos).
+     * Los guisos de almuerzo limeños (Estofado, Locro, Seco) se acompañan siempre con su Arroz Blanco de guarnición.
 
-REGLAS DE COHERENCIA MULTISECTORIAL Y SEGURIDAD:
-1. ALIMENTOS Y RECETAS (Comida, Ensaladas, Postres): NUNCA incluyas productos de Limpieza (lejía, detergente), Ferretería (cinta aislante) ni desinfectantes.
-2. FIESTAS INFANTILES Y NIÑOS / LONCHERAS: Incluye golosinas, galletas, gaseosas, jugos o frutas (ej: Casino, Inca Kola, Plátano, Yogurt). NUNCA incluyas licores ni químicos de limpieza.
-3. ASEO Y DESINFECCIÓN DEL HOGAR: Si la solicitud es para limpieza de casa o cocina, usa lejía y detergente. NUNCA sugieras alimentos sueltos.
-4. EXCLUSIÓN TOTAL DE HUEVO EN TALLARINES ROJOS: Si la solicitud incluye "tallarines", NO incluyas Huevo de Gallina bajo ninguna circunstancia.
-5. INCLUSIÓN MANDATORIA DE LAUREL Y HONGO: Si la solicitud es "tallarines" o "estofado" y "Laurel y Hongo" está disponible, ES OBLIGATORIO INCLUIRLO.
-6. Coherencia Total en la Descripción: MENCIONA EXPLÍCITAMENTE en la "descripcion" CADA UNO de los productos incluidos en la lista "productos" (2-3 oraciones).
+2. FIESTAS, EVENTOS Y LONCHERAS LIMEÑAS:
+   - Cumpleaños / Fiestas infantiles: Involucran gaseosa (Inca Kola / Coca-Cola), galletas (Casino), jugos, yogurt o frutas (Plátano/Pera). NUNCA licores ni químicos de limpieza.
+   - Lonchecito / Desayuno Limeño: Pan, queso fresco, huevo, leche/café, fruta.
+
+3. HOGAR Y MULTISECTORIAL:
+   - Limpieza y desinfección de casa: Usa lejía y detergente. NUNCA mezcles con alimentos no empacados ni sugieras lejía para aseo corporal.
+
+4. REGLA DE DESCRIPCIÓN EXPLICITA:
+   - MENCIONA Y JUSTIFICA en la "descripcion" (2-3 oraciones) CADA UNO de los productos incluidos en la lista "productos".
+5. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
 {
@@ -141,26 +146,13 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
       return NextResponse.json({ error: 'Error al procesar la respuesta de la IA' }, { status: 500 });
     }
 
-    // 6. Mapear productos del LLM con datos reales de Firestore y aplicar filtro de seguridad Limeña Criolla
+    // 6. Mapear productos del LLM con datos reales de Firestore
     const productosMap = new Map(productosRelevantes.map(p => [p.id, p]));
-    const isTallarines = solicitud.toLowerCase().includes('tallarin');
-    const isEstofado = solicitud.toLowerCase().includes('estofado');
 
     const productosCombo: ProductoCombo[] = llmResponse.productos
       .map((item): ProductoCombo | null => {
         const prod = productosMap.get(item.id);
         if (!prod) return null;
-
-        // Post-filtro estricto Limeño Criollo
-        const nombreLower = prod.nombre.toLowerCase();
-        if (isTallarines && nombreLower.includes('huevo')) {
-          console.log('[Safety Filter Limeño] Excluido Huevo de Gallina para Tallarines Rojos');
-          return null;
-        }
-        if (isEstofado && (nombreLower.includes('fideos') || nombreLower.includes('zapallo') || nombreLower.includes('huevo'))) {
-          console.log('[Safety Filter Limeño] Excluido ingrediente incompatible para Estofado:', prod.nombre);
-          return null;
-        }
 
         return {
           id: prod.id,
