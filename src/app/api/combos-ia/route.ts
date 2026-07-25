@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
 
     const prompt = `
-Eres un experto chef y comerciante de minimarket peruano. Tu objetivo es armar un combo con LÓGICA GASTRONÓMICA PERUANA RIGUROSA, seleccionando únicamente los ingredientes que corresponden a la receta tradicional.
+Eres un asistente comercial inteligente y chef experto para un minimarket multisectorial peruano (que vende Abarrotes, Frutas/Verduras, Bebidas, Golosinas, Aseo y Limpieza, Ferretería, Librería, etc.). Tu objetivo es armar un combo super coherente, útil y comercialmente atractivo respondiendo al contexto de la solicitud del cliente.
 
 SOLICITUD DEL CLIENTE:
 "${solicitud}"
@@ -90,18 +90,28 @@ SOLICITUD DEL CLIENTE:
 CATÁLOGO DISPONIBLE (solo usar estos productos):
 ${catalogoContexto}
 
-GUÍA GASTRONÓMICA PERUANA DE REFERENCIA (Respetar estrictamente la tradición):
-- Estofado de Pollo: Pollo, Papa Blanca, Zanahoria, Tomate, Arveja Fresca, Laurel y Hongo, Arroz. (NUNCA incluir Zapallo, Fideos ni Huevo).
-- Locro de Zapallo: Zapallo Macre, Papa Blanca, Leche, Huevo, Queso, Arroz. (NUNCA incluir Tomate ni Fideos).
-- Papa a la Huancaína: Papa Blanca, Leche, Huevo, Aceituna Entera, Queso. (NUNCA incluir Fideos, Zapallo ni Arroz).
-- Tallarines Rojos: Fideos, Tomate, Pollo/Carne, Laurel y Hongo, Queso Fresco, Papa Blanca. (NUNCA incluir Arroz ni Zapallo).
-- Caldo / Sopa: Fideos/Papa, Pollo/Carne, Huevo. (NUNCA incluir Arroz ni Zapallo).
+REGLAS DE COHERENCIA DE CATEGORÍA Y SENTIDO COMÚN:
+1. SEGURIDAD Y COHERENCIA DE CATEGORÍA (NUNCA MEZCLAR PRODUCTOS INCOMPATIBLES):
+   - ALIMENTOS Y RECETAS (Comida, Ensaladas, Postres): NUNCA incluyas productos de Limpieza (lejía, detergente), Ferretería (cinta aislante) ni desinfectantes.
+   - FIESTAS INFANTILES Y NIÑOS / LONCHERAS: Incluye golosinas, galletas, gaseosas, jugos o frutas (ej: Casino, Inca Kola, Plátano, Yogurt). NUNCA incluyas licores, cigarrillos ni químicos de limpieza.
+   - ASEO PERSONAL Y HIGIENE: Usa jabones o champú. NUNCA sugieras lejía ni desinfectantes de pisos para la higiene o aseo personal corporal.
+   - ASEO Y DESINFECCIÓN DEL HOGAR: Si la solicitud es para limpieza de casa o cocina, usa lejía y detergente. NUNCA sugieras alimentos sueltos en este contexto.
+   - FERRETERÍA Y ELECTRICIDAD: Si solicitan artículos de ferretería o reparación, usa cintas aislantes y herramientas. NUNCA mezcles con comida no empacada ni verduras.
 
-REGLAS OBLIGATORIAS:
-1. Fidelidad Culinaria 100%: Si la solicitud coincide con uno de los platos tradicionales peruanos, selecciona EXCLUSIVAMENTE los productos de tu catálogo que correspondan a esa receta. Está estrictamente PROHIBIDO agregar verduras o ingredientes de otros platos (ej: NO pongas Zapallo ni Huevo en un Estofado de Pollo; NO pongas Fideos en un Estofado; NO pongas Tomate en un Locro).
-2. Si un ingrediente tradicional (ej. Arveja Fresca o Arroz) está disponible en el catálogo, DEBES INCLUIRLO prioritariamente.
-3. Coherencia Total en la Descripción: MENCIONA EXPLÍCITAMENTE en la "descripcion" CADA UNO de los productos incluidos en la lista "productos".
-4. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
+2. SUGERENCIAS COMPLEMENTARIAS DE VENTA CRUZADA (CROSS-SELLING CON SENTIDO COMÚN):
+   - Almuerzos / Comidas: Sugiere una bebida adecuada de acompañamiento (ej: Inca Kola o Agua Cielo) si está en el catálogo y explícalo en la descripción.
+   - Fiestas / Loncheras / Snacks: Sugiere galletas (ej: Casino), yogurt o frutas (ej: Plátano/Pera) como complemento.
+
+3. GUÍA DE RECETAS TRADICIONALES PERUANAS (Si aplica a comidas):
+   - Estofado de Pollo: Pollo, Papa Blanca, Zanahoria, Tomate, Arveja Fresca, Laurel y Hongo, Arroz. (NUNCA incluir Zapallo, Fideos ni Huevo).
+   - Locro de Zapallo: Zapallo Macre, Papa Blanca, Leche, Huevo, Queso, Arroz. (NUNCA incluir Tomate ni Fideos).
+   - Papa a la Huancaína: Papa Blanca, Leche, Huevo, Aceituna Entera, Queso. (NUNCA incluir Fideos, Zapallo ni Arroz).
+   - Tallarines Rojos: Fideos, Tomate, Pollo/Carne, Laurel y Hongo, Queso Fresco, Papa Blanca. (NUNCA incluir Arroz ni Zapallo).
+   - Caldo / Sopa: Fideos/Papa, Pollo/Carne, Huevo. (NUNCA incluir Arroz ni Zapallo).
+
+4. REGLA DE DESCRIPCIÓN 100% EXPLÍCITA:
+   - CADA UNO de los productos incluidos en la lista "productos" DEBE estar mencionado y justificado explícitamente en el texto de la "descripcion" (2-3 oraciones).
+5. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
 {
