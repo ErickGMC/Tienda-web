@@ -202,9 +202,11 @@ export async function generarEmbedding(texto: string): Promise<number[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const embeddingModel = genAI.getGenerativeModel({ model: modelo });
 
-  const result = await embeddingModel.embedContent(texto);
-  // ⚡ Sin truncamiento: usar todos los dims del modelo para máxima precisión
-  return result.embedding.values;
+  const result = await embeddingModel.embedContent({
+    content: { parts: [{ text: texto }] },
+    outputDimensionality: 768
+  });
+  return result.embedding.values.slice(0, 768);
 }
 
 /**
