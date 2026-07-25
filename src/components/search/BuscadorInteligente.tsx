@@ -309,13 +309,8 @@ export default function BuscadorInteligente({
                 </div>
 
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  {producto.precio > 0 && (
-                    <span className="text-sm font-bold text-emerald-600">
-                      S/ {producto.precio.toFixed(2)}
-                    </span>
-                  )}
-                  <span className="text-[10px] text-slate-400 group-hover:text-violet-500 flex items-center gap-0.5 transition-colors font-medium">
-                    <ShoppingCart className="w-3 h-3" /> Agregar
+                  <span className="text-[11px] text-slate-400 group-hover:text-violet-500 flex items-center gap-1 transition-colors font-medium bg-slate-50 dark:bg-slate-800 group-hover:bg-violet-50 dark:group-hover:bg-violet-950/50 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 group-hover:border-violet-200">
+                    <ShoppingCart className="w-3.5 h-3.5" /> Agregar
                   </span>
                 </div>
               </button>
