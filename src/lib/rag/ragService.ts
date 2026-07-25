@@ -8,7 +8,7 @@
  *
  * OPTIMIZACIONES (v2):
  *  - IAConfig cacheada en memoria del servidor por 30 segundos → elimina llamada Firestore extra por búsqueda.
- *  - Dims completos: gemini-embedding-001 produce 3072 dims, se usan TODOS (sin truncar a 768).
+ *  - Dims completos: gemini-embedding-2 produce 3072 dims, se usan TODOS.
  *  - Ejecución paralela: embedding + getDocs se ejecutan con Promise.all.
  *  - Nivel 1 mejorado: filtra por nombre, descripción, categoría, etiquetas y código de barras.
  */

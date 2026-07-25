@@ -149,8 +149,7 @@ export async function POST(request: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const embeddingModel = genAI.getGenerativeModel({ model: modelo });
     const result = await embeddingModel.embedContent(textoRAG);
-    // ⚡ Sin truncamiento: guardar todos los dims producidos por el modelo
-    // gemini-embedding-001 → 3072 dims. Truncar reduce la precisión semántica.
+    // ⚡ Sin truncamiento: guardar todos los dims producidos por el modelo (gemini-embedding-2 → 3072 dims)
     const embeddingValues = result.embedding.values;
 
     // 4. Guardar en Firestore con Admin SDK

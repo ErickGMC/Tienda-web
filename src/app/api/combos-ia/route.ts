@@ -1,6 +1,6 @@
 /**
  * API Route: /api/combos-ia
- * Nivel 3 del sistema RAG — Armador de Combos / Recetas con Gemini 1.5 Flash.
+ * Nivel 3 del sistema RAG — Armador de Combos / Recetas con Gemini 3.1 Flash Lite (y respaldo a 3.5 Flash Lite).
  *
  * POST /api/combos-ia
  * Body: { solicitud: string }
