@@ -180,14 +180,14 @@ export default function BuscadorInteligente({
 
         <div className="relative flex items-center w-full bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200 dark:border-slate-800 p-1.5 pl-4 overflow-hidden">
           
-          {/* Símbolo discreto de IA — APARECE ÚNICAMENTE SI LA IA ESTÁ HABILITADA */}
+          {/* Símbolo de IA o Lupa */}
           {iaHabilitada ? (
-            <div className="flex items-center gap-1 pr-2 py-0.5 px-2.5 rounded-full bg-violet-100 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-[11px] font-extrabold flex-shrink-0 animate-fade-in">
+            <div className="flex items-center gap-1 py-0.5 px-2 sm:px-2.5 rounded-full bg-violet-100 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-[10px] sm:text-[11px] font-extrabold flex-shrink-0 animate-fade-in">
               <Sparkles className="w-3.5 h-3.5 text-violet-500 animate-pulse" />
               <span>IA</span>
             </div>
           ) : (
-            <div className="text-slate-400 pr-2 flex-shrink-0">
+            <div className="text-slate-400 pr-1 sm:pr-2 flex-shrink-0">
               <Search className="w-4 h-4" />
             </div>
           )}
@@ -202,15 +202,15 @@ export default function BuscadorInteligente({
             onFocus={() => resultados.length > 0 && setMostrarDropdown(true)}
             placeholder={
               iaHabilitada
-                ? 'Busca o describe lo que necesitas (Ej: algo para el desayuno)...'
-                : 'Busca productos, abarrotes, bebidas...'
+                ? 'Describe lo que buscas con IA (ej: desayuno)...'
+                : 'Busca productos, abarrotes...'
             }
-            className="w-full py-2 px-1 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none text-sm"
+            className="w-full py-1.5 sm:py-2 px-1.5 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none text-xs sm:text-sm min-w-0"
             autoComplete="off"
           />
 
           {/* Botones de Acción */}
-          <div className="flex items-center gap-1.5 flex-shrink-0 pl-1">
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 pl-1">
             
             {isLoading && (
               <Loader2 className="w-4 h-4 text-violet-500 animate-spin mr-1" />
@@ -234,26 +234,26 @@ export default function BuscadorInteligente({
                 if (debounceRef.current) clearTimeout(debounceRef.current);
                 realizarBusqueda(inputValue);
               }}
-              className={`p-2 rounded-full text-white font-medium text-xs flex items-center justify-center transition-all cursor-pointer ${
+              className={`p-1.5 sm:p-2 rounded-full text-white font-medium text-xs flex items-center justify-center transition-all cursor-pointer ${
                 iaHabilitada
                   ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-sm'
                   : 'bg-amber-500 hover:bg-amber-600 shadow-sm'
               }`}
               title="Buscar"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
-            {/* Botón "Armar Combo" (Aparece solo si los combos IA están activados independientemente) */}
+            {/* Botón "Armar Combo" (Aparece si la IA de combos está habilitada) */}
             {mostrarCombos && iaCombosHabilitada && onAbrirCombos && (
               <button
                 type="button"
                 onClick={onAbrirCombos}
-                className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold rounded-full transition-all shadow-sm flex-shrink-0 cursor-pointer"
+                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-[11px] sm:text-xs font-bold rounded-full transition-all shadow-sm flex-shrink-0 cursor-pointer"
                 title="Crear combo con IA"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Armar Combo</span>
+                <Sparkles className="w-3.5 h-3.5 text-emerald-100" />
+                <span className="inline font-bold">Combo IA</span>
               </button>
             )}
           </div>

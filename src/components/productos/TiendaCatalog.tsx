@@ -23,6 +23,15 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
   const { searchQuery, selectedCategory, setSelectedCategory, setShowPrices, setConfig, ragProductos } = useTiendaStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   
+  // Paginación (12 productos por página)
+  const ITEMS_PER_PAGE = 12;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Resetear a la página 1 cuando cambia el filtro o la búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchQuery, ragProductos]);
+
   // Drag to scroll logic optimized with useRef (prevents re-renders)
   const dragState = useRef({ isDragging: false, startX: 0, scrollLeft: 0, hasDragged: false });
 
@@ -116,6 +125,26 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
     });
   }, [productos, selectedCategory, searchQuery, ragProductos]);
 
+  // Paginación calculada
+  const totalPages = Math.ceil(productosFiltrados.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const productosPaginados = useMemo(() => {
+    return productosFiltrados.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [productosFiltrados, startIndex]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      setTimeout(() => {
+        const productsGrid = document.getElementById('productos-grid');
+        if (productsGrid) {
+          const y = productsGrid.getBoundingClientRect().top + window.scrollY - 120;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
       
@@ -185,16 +214,89 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
           {searchQuery ? `Resultados para "${searchQuery}"` : selectedCategory === 'Todas' ? 'Productos Destacados' : selectedCategory}
         </h2>
         <span className="text-sm text-slate-500">
-          {productosFiltrados.length} productos
+          {productosFiltrados.length > 0 ? (
+            <>Mostrando <span className="font-semibold text-slate-700 dark:text-slate-300">{startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, productosFiltrados.length)}</span> de {productosFiltrados.length} productos</>
+          ) : (
+            '0 productos'
+          )}
         </span>
       </div>
 
-      {productosFiltrados.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-          {productosFiltrados.map((producto) => (
-            <ProductCard key={producto.id} producto={producto} />
-          ))}
-        </div>
+      {productosPaginados.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+            {productosPaginados.map((producto) => (
+              <ProductCard key={producto.id} producto={producto} />
+            ))}
+          </div>
+
+          {/* Barra de Paginación */}
+          {totalPages > 1 && (
+            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200 dark:border-slate-800">
+              <span className="text-xs sm:text-sm text-slate-500 font-medium">
+                Página <span className="text-slate-900 dark:text-white font-bold">{currentPage}</span> de {totalPages}
+              </span>
+
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Botón Anterior */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Anterior</span>
+                </button>
+
+                {/* Páginas Numeradas */}
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Mostrar siempre la 1era, la última, y las adyacentes a la página actual
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                            currentPage === page
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30 scale-105'
+                              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span key={page} className="px-1 text-slate-400 text-xs select-none">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+
+                {/* Botón Siguiente */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  <span className="hidden sm:inline">Siguiente</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-4">

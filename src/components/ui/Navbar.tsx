@@ -26,16 +26,16 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all">
+        <div className="container mx-auto px-4 h-16 sm:h-20 flex items-center justify-between gap-3 sm:gap-4">
           
           {/* Logo Section & Navigation */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link href="/" className="flex items-center gap-2 group" onClick={handleReset}>
-              <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl text-white shadow-lg shadow-amber-500/30 group-hover:shadow-amber-500/50 transition-all duration-300">
-                <Store className="w-6 h-6" />
+              <div className="p-1.5 sm:p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl text-white shadow-lg shadow-amber-500/30 group-hover:shadow-amber-500/50 transition-all duration-300">
+                <Store className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 hidden sm:block">
+              <span className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
                 {nombreComercial}
               </span>
             </Link>
@@ -50,8 +50,8 @@ export default function Navbar() {
             </nav>
           </div>
 
-          {/* Search Bar Section con RAG e IA */}
-          <div className="flex-1 max-w-2xl min-w-0">
+          {/* Search Bar Section con RAG e IA (SOLO DESKTOP) */}
+          <div className="hidden md:block flex-1 max-w-2xl min-w-0">
             <BuscadorInteligente
               mostrarCombos={true}
               onAbrirCombos={() => setIsComboModalOpen(true)}
@@ -70,7 +70,7 @@ export default function Navbar() {
             
             <button 
               onClick={handleConsultarLista}
-              className="relative flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-full font-medium text-sm text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 transition-colors shadow-sm"
+              className="relative flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-full font-medium text-xs sm:text-sm text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 transition-colors shadow-sm"
             >
               <ListPlus className="w-4 h-4" />
               <span className="hidden sm:inline">Mi Lista</span>
@@ -81,6 +81,14 @@ export default function Navbar() {
               )}
             </button>
           </div>
+        </div>
+
+        {/* Search Bar Section con RAG e IA (SOLO MÓVIL - Fila Dedicada y Completa) */}
+        <div className="px-3 pb-3 md:hidden">
+          <BuscadorInteligente
+            mostrarCombos={true}
+            onAbrirCombos={() => setIsComboModalOpen(true)}
+          />
         </div>
       </header>
 
