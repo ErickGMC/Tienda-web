@@ -8,10 +8,15 @@
  *
  * Si la IA está deshabilitada desde el POS (web_config/ia.iaBusquedaHabilitada = false),
  * retorna los resultados del Nivel 1 (búsqueda exacta) sin consumir créditos de API.
+ *
+ * OPTIMIZACIÓN (v2): getIAConfig() usa caché de 30s en memoria → no hay round-trip
+ * extra a Firestore en cada búsqueda.
  */
 
 import { NextResponse } from 'next/server';
 import { buscar, getIAConfig } from '@/lib/rag/ragService';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -22,16 +27,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Término de búsqueda inválido' }, { status: 400 });
     }
 
-    // Verificar si la IA está habilitada desde el POS
+    // Verificar si la IA está habilitada (cacheado 30s en memoria — costo ~0ms tras la primera llamada)
     const iaConfig = await getIAConfig();
     const usarIA = iaConfig.iaBusquedaHabilitada;
 
     const resultado = await buscar(termino.trim(), usarIA);
 
-    return NextResponse.json({
-      ...resultado,
-      iaHabilitada: usarIA,
-    });
+    return NextResponse.json(
+      {
+        ...resultado,
+        iaHabilitada: usarIA,
+        iaCombosHabilitada: iaConfig.iaCombosHabilitada,
+      },
+      {
+        headers: {
+          'X-Search-Level': String(resultado.nivel),
+          'X-Latency-Ms': String(resultado.latencyMs),
+          'X-IA-Enabled': String(usarIA),
+        },
+      }
+    );
   } catch (error: any) {
     console.error('[API /search-ia] Error:', error);
     return NextResponse.json(

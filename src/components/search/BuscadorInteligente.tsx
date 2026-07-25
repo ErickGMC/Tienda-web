@@ -3,10 +3,17 @@
 /**
  * BuscadorInteligente.tsx
  * Barra de búsqueda profesional para la Tienda Web con estado IA dinámico.
+ *
+ * MEJORAS (v2):
+ *  - Debounce automático de 400ms — la búsqueda se activa sola mientras el usuario escribe.
+ *  - Badge de latencia visible en el dropdown (ej: "812ms").
+ *  - Animación fade-in-up por ítem del dropdown para UX más fluida.
+ *  - Cancelación inteligente de peticiones en vuelo (AbortController).
+ *  - Indicador visual de nivel: "Exacta" (Nivel 1) vs "✨ Semántica IA" (Nivel 2).
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Sparkles, X, Loader2, ShoppingCart } from 'lucide-react';
+import { Search, Sparkles, X, Loader2, ShoppingCart, Zap, Clock } from 'lucide-react';
 import { Producto } from '@/types/producto';
 import { useTiendaStore } from '@/lib/store';
 import Image from 'next/image';
@@ -25,6 +32,11 @@ interface BuscadorInteligenteProps {
   className?: string;
 }
 
+// ── Constantes ───────────────────────────────────────────────────────────────
+
+const DEBOUNCE_MS = 400; // ms de espera tras el último teclazo antes de buscar
+const MIN_CHARS = 2;     // mínimo de caracteres para activar la búsqueda
+
 export default function BuscadorInteligente({
   mostrarCombos = true,
   onAbrirCombos,
@@ -35,15 +47,17 @@ export default function BuscadorInteligente({
   const [resultados, setResultados] = useState<Producto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [nivelUsado, setNivelUsado] = useState<1 | 2 | null>(null);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [iaHabilitada, setIaHabilitada] = useState(false);
   const [iaCombosHabilitada, setIaCombosHabilitada] = useState(false);
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
+
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Verificar el estado de la IA al cargar la página (una sola llamada para ambos estados)
+  // ── Verificar estado de IA al montar (única llamada) ──────────────────────
   useEffect(() => {
     async function verificarIA() {
       try {
@@ -61,7 +75,7 @@ export default function BuscadorInteligente({
     verificarIA();
   }, []);
 
-  // Cerrar dropdown al hacer clic fuera
+  // ── Cerrar dropdown al hacer clic fuera ───────────────────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -72,15 +86,17 @@ export default function BuscadorInteligente({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // ── Core: realizar búsqueda HTTP ──────────────────────────────────────────
   const realizarBusqueda = useCallback(async (termino: string) => {
     const terminoLimpio = termino.trim();
 
-    if (terminoLimpio.length < 2) {
+    if (terminoLimpio.length < MIN_CHARS) {
       setSearchQuery(terminoLimpio);
       setRagProductos(null);
       setResultados([]);
       setMostrarDropdown(false);
       setNivelUsado(null);
+      setLatencyMs(null);
       return;
     }
 
@@ -106,15 +122,21 @@ export default function BuscadorInteligente({
       if (!response.ok) throw new Error('Error en búsqueda');
 
       const data: SearchResult = await response.json();
+
       setResultados(data.productos);
       setNivelUsado(data.nivel);
+      setLatencyMs(data.latencyMs ?? null);
       setIaHabilitada(Boolean(data.iaHabilitada));
+      if (data.iaCombosHabilitada !== undefined) {
+        setIaCombosHabilitada(Boolean(data.iaCombosHabilitada));
+      }
       setMostrarDropdown(data.productos.length > 0);
       // Compartir los resultados semánticos con la cuadrícula principal del catálogo
       setRagProductos(data.productos.length > 0 ? data.productos : null);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         setNivelUsado(1);
+        setLatencyMs(null);
       }
     } finally {
       if (abortControllerRef.current === controller) {
@@ -123,11 +145,15 @@ export default function BuscadorInteligente({
     }
   }, [setSearchQuery, setRagProductos]);
 
+  // ── Input change con debounce de 400ms ───────────────────────────────────
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputValue(val);
 
-    // Si el usuario borra completamente el texto, limpiar resultados
+    // Cancelar debounce anterior
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    // Si el usuario borra completamente el texto, limpiar al instante
     if (val.trim() === '') {
       if (abortControllerRef.current) abortControllerRef.current.abort();
       setSearchQuery('');
@@ -135,23 +161,40 @@ export default function BuscadorInteligente({
       setResultados([]);
       setMostrarDropdown(false);
       setNivelUsado(null);
+      setLatencyMs(null);
+      return;
+    }
+
+    // Disparar búsqueda automática tras 400ms de inactividad
+    if (val.trim().length >= MIN_CHARS) {
+      debounceRef.current = setTimeout(() => {
+        realizarBusqueda(val);
+      }, DEBOUNCE_MS);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      // Enter cancela el debounce y busca inmediatamente
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       realizarBusqueda(inputValue);
+    }
+    if (e.key === 'Escape') {
+      setMostrarDropdown(false);
     }
   };
 
   const handleLimpiar = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (abortControllerRef.current) abortControllerRef.current.abort();
     setInputValue('');
     setSearchQuery('');
+    setRagProductos(null);
     setResultados([]);
     setMostrarDropdown(false);
     setNivelUsado(null);
+    setLatencyMs(null);
     inputRef.current?.focus();
   };
 
@@ -161,14 +204,18 @@ export default function BuscadorInteligente({
     setMostrarDropdown(false);
     setInputValue('');
     setSearchQuery('');
+    setRagProductos(null);
   };
+
+  // ── Helpers de formato ────────────────────────────────────────────────────
+  const formatLatency = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
 
   return (
     <div ref={dropdownRef} className={`relative w-full max-w-2xl mx-auto ${className}`}>
-      
-      {/* ── Barra de Búsqueda ───────────────────────────────────────── */}
+
+      {/* ── Barra de Búsqueda ─────────────────────────────────────────────── */}
       <div className="relative group">
-        
+
         {/* Resplandor ambiental de fondo */}
         <div
           className={`absolute -inset-0.5 rounded-full blur transition-all duration-500 ${
@@ -179,7 +226,7 @@ export default function BuscadorInteligente({
         />
 
         <div className="relative flex items-center w-full bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200 dark:border-slate-800 p-1.5 pl-4 overflow-hidden">
-          
+
           {/* Símbolo de IA o Lupa */}
           {iaHabilitada ? (
             <div className="flex items-center gap-1 py-0.5 px-2 sm:px-2.5 rounded-full bg-violet-100 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-[10px] sm:text-[11px] font-extrabold flex-shrink-0 animate-fade-in">
@@ -211,12 +258,12 @@ export default function BuscadorInteligente({
 
           {/* Botones de Acción */}
           <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 pl-1">
-            
+
             {isLoading && (
               <Loader2 className="w-4 h-4 text-violet-500 animate-spin mr-1" />
             )}
 
-            {inputValue && (
+            {inputValue && !isLoading && (
               <button
                 type="button"
                 onClick={handleLimpiar}
@@ -227,7 +274,7 @@ export default function BuscadorInteligente({
               </button>
             )}
 
-            {/* Botón Lupa Profesional integrado */}
+            {/* Botón Buscar */}
             <button
               type="button"
               onClick={() => {
@@ -244,7 +291,7 @@ export default function BuscadorInteligente({
               <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
-            {/* Botón "Armar Combo" (Aparece si la IA de combos está habilitada) */}
+            {/* Botón "Armar Combo" */}
             {mostrarCombos && iaCombosHabilitada && onAbrirCombos && (
               <button
                 type="button"
@@ -260,34 +307,58 @@ export default function BuscadorInteligente({
         </div>
       </div>
 
-      {/* Dropdown de Resultados */}
+      {/* ── Dropdown de Resultados ────────────────────────────────────────── */}
       {mostrarDropdown && resultados.length > 0 && (
-        <div className="absolute top-full mt-3 left-0 right-0 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 z-50 overflow-hidden">
+        <div className="absolute top-full mt-3 left-0 right-0 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 z-50 overflow-hidden animate-fade-in">
+
+          {/* Encabezado del dropdown */}
           <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-              <span>{resultados.length} resultado{resultados.length !== 1 ? 's' : ''}</span>
-              {nivelUsado === 2 && (
-                <span className="text-violet-600 dark:text-violet-400 font-bold bg-violet-50 dark:bg-violet-950/50 px-2 py-0.5 rounded-md text-[10px]">
-                  ✨ Búsqueda Semántica RAG
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-slate-500">
+                {resultados.length} resultado{resultados.length !== 1 ? 's' : ''}
+              </span>
+
+              {/* Badge de nivel de búsqueda */}
+              {nivelUsado === 2 ? (
+                <span className="flex items-center gap-1 text-violet-600 dark:text-violet-400 font-bold bg-violet-50 dark:bg-violet-950/50 px-2 py-0.5 rounded-md text-[10px]">
+                  <Sparkles className="w-3 h-3" />
+                  Semántica IA
+                </span>
+              ) : nivelUsado === 1 ? (
+                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md text-[10px]">
+                  <Zap className="w-3 h-3" />
+                  Exacta
+                </span>
+              ) : null}
+
+              {/* Badge de latencia */}
+              {latencyMs !== null && (
+                <span className="flex items-center gap-0.5 text-slate-400 text-[10px] font-medium">
+                  <Clock className="w-3 h-3" />
+                  {formatLatency(latencyMs)}
                 </span>
               )}
-            </span>
+            </div>
+
             <button
               onClick={() => setMostrarDropdown(false)}
-              className="text-slate-400 hover:text-slate-600 text-xs"
+              className="text-slate-400 hover:text-slate-600 text-xs transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
+          {/* Lista de resultados */}
           <div className="max-h-72 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800">
-            {resultados.map((producto) => (
+            {resultados.map((producto, index) => (
               <button
                 key={producto.id}
                 onClick={() => handleSeleccionarProducto(producto)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left group"
+                style={{ animationDelay: `${index * 40}ms` }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left group animate-slide-in-up opacity-0 [animation-fill-mode:forwards]"
               >
-                <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                {/* Imagen del producto */}
+                <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0">
                   {producto.imagenUrl ? (
                     <Image
                       src={producto.imagenUrl}
@@ -301,6 +372,7 @@ export default function BuscadorInteligente({
                   )}
                 </div>
 
+                {/* Nombre y categoría */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
                     {producto.nombre}
@@ -308,6 +380,7 @@ export default function BuscadorInteligente({
                   <p className="text-xs text-slate-500 truncate">{producto.categoria}</p>
                 </div>
 
+                {/* Botón agregar */}
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span className="text-[11px] text-slate-400 group-hover:text-violet-500 flex items-center gap-1 transition-colors font-medium bg-slate-50 dark:bg-slate-800 group-hover:bg-violet-50 dark:group-hover:bg-violet-950/50 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 group-hover:border-violet-200">
                     <ShoppingCart className="w-3.5 h-3.5" /> Agregar

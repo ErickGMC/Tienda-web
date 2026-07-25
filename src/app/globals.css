@@ -165,3 +165,26 @@ input[type="submit"]:not(:disabled):active,
     background: rgba(255,255,255,0.02);
   }
 }
+
+/* ── Buscador IA — Animaciones del Dropdown ─────────────────────────────── */
+
+/* Fade-in suave para el contenedor del dropdown */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Slide-in-up escalonado para cada ítem del dropdown */
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

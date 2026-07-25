@@ -3,25 +3,22 @@
  * Servicio de búsqueda semántica (RAG) para la Tienda Web.
  *
  * NIVELES DE BÚSQUEDA:
- *  Nivel 1 — Búsqueda exacta (Firestore query por nombre/código). Siempre activo. Costo $0.
- *  Nivel 2 — Búsqueda semántica (embedding + findNearest con Firebase Admin SDK). Solo cuando IA está habilitada.
+ *  Nivel 1 — Búsqueda exacta (filtro en memoria sobre todos los productos disponibles). Costo $0.
+ *  Nivel 2 — Búsqueda semántica (embedding Gemini + similitud coseno). Solo cuando IA está habilitada.
  *
- * La verificación de si la IA está habilitada se hace antes de llamar a este servicio
- * (en el API route), leyendo el documento `web_config/ia` en Firestore.
+ * OPTIMIZACIONES (v2):
+ *  - IAConfig cacheada en memoria del servidor por 30 segundos → elimina llamada Firestore extra por búsqueda.
+ *  - Dims completos: gemini-embedding-001 produce 3072 dims, se usan TODOS (sin truncar a 768).
+ *  - Ejecución paralela: embedding + getDocs se ejecutan con Promise.all.
+ *  - Nivel 1 mejorado: filtra por nombre, descripción, categoría, etiquetas y código de barras.
  */
 
 import {
   collection,
-  query,
-  where,
   getDocs,
-  orderBy,
-  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Producto } from '@/types/producto';
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -36,15 +33,60 @@ export interface IAConfig {
   iaCombosHabilitada: boolean;
 }
 
-// ── Admin SDK Helper ─────────────────────────────────────────────────────────
+// ── Caché en memoria del estado de IA ────────────────────────────────────────
+// Evita llamar Firestore REST en cada búsqueda. TTL: 30 segundos.
 
-function getAdminDb() {
-  if (getApps().length === 0) {
-    initializeApp({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'minimarket-flor-8d7f9',
-    });
+let _iaCacheValue: IAConfig | null = null;
+let _iaCacheTs: number = 0;
+const IA_CACHE_TTL_MS = 30_000; // 30 segundos
+
+/**
+ * Lee la configuración de IA desde Firestore.
+ * Cachea el resultado por IA_CACHE_TTL_MS en memoria del servidor.
+ * Retorna { false, false } si el documento no existe o hay error (fail-safe).
+ */
+export async function getIAConfig(): Promise<IAConfig> {
+  const now = Date.now();
+  if (_iaCacheValue && (now - _iaCacheTs) < IA_CACHE_TTL_MS) {
+    return _iaCacheValue;
   }
-  return getFirestore();
+
+  try {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'minimarket-flor-8d7f9';
+    const res = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/web_config/ia`,
+      { cache: 'no-store' }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const busquedaEnabled = Boolean(data?.fields?.iaBusquedaHabilitada?.booleanValue);
+      const combosEnabled = Boolean(data?.fields?.iaCombosHabilitada?.booleanValue);
+      const config: IAConfig = {
+        iaBusquedaHabilitada: busquedaEnabled,
+        // Regla de negocio: los combos requieren que la búsqueda IA esté activa
+        iaCombosHabilitada: busquedaEnabled && combosEnabled,
+      };
+      _iaCacheValue = config;
+      _iaCacheTs = now;
+      return config;
+    }
+  } catch (e) {
+    console.warn('[RAG] Error leyendo web_config/ia:', e);
+  }
+
+  const fallback: IAConfig = { iaBusquedaHabilitada: false, iaCombosHabilitada: false };
+  // Cachear el fallback también (TTL corto: 5s) para no martillar Firestore ante errores
+  _iaCacheValue = fallback;
+  _iaCacheTs = now - (IA_CACHE_TTL_MS - 5_000);
+  return fallback;
+}
+
+/**
+ * Invalida el caché de IAConfig. Usar tras guardar nueva configuración de IA.
+ */
+export function invalidateIACache() {
+  _iaCacheValue = null;
+  _iaCacheTs = 0;
 }
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
@@ -61,7 +103,7 @@ function mapProducto(docData: any, id: string): Producto {
   } else if (typeof rest.etiquetas === 'string') {
     try { etiquetas = JSON.parse(rest.etiquetas); } catch { etiquetas = []; }
   } else if (typeof rest.etiquetas === 'object' && rest.etiquetas !== null) {
-    etiquetas = Object.values(rest.etiquetas).filter(e => typeof e === 'string');
+    etiquetas = Object.values(rest.etiquetas).filter(e => typeof e === 'string') as string[];
   }
   return {
     ...rest,
@@ -74,51 +116,29 @@ function mapProducto(docData: any, id: string): Producto {
   } as Producto;
 }
 
-/**
- * Lee la configuración de IA desde Firestore.
- * Retorna false si el documento no existe o hay error (fail-safe).
- */
-export async function getIAConfig(): Promise<IAConfig> {
-  try {
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'minimarket-flor-8d7f9';
-    const res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/web_config/ia`,
-      { cache: 'no-store' }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      const busquedaEnabled = Boolean(data?.fields?.iaBusquedaHabilitada?.booleanValue);
-      const combosEnabled = Boolean(data?.fields?.iaCombosHabilitada?.booleanValue);
-      return {
-        iaBusquedaHabilitada: busquedaEnabled,
-        // Regla de negocio: los combos requieren que la búsqueda IA esté activa
-        iaCombosHabilitada: busquedaEnabled && combosEnabled,
-      };
-    }
-  } catch (e) {
-    console.warn('[RAG] Error leyendo web_config/ia:', e);
-  }
-  return { iaBusquedaHabilitada: false, iaCombosHabilitada: false };
-}
-
 // ── Nivel 1: Búsqueda Exacta ─────────────────────────────────────────────────
 
 /**
- * Búsqueda de texto clásica por nombre del producto.
- * Costo: 0 créditos de IA.
+ * Búsqueda de texto clásica por nombre, descripción, categoría y etiquetas.
+ * Costo: 0 créditos de IA. Filtrado en memoria sobre documentos ya cargados.
  */
 export async function busquedaExacta(termino: string, maxResultados = 8): Promise<Producto[]> {
   const terminoLower = termino.toLowerCase().trim();
   if (!terminoLower) return [];
 
   try {
-    const snap = await getDocs(query(collection(db, 'productos'), where('disponible', '==', true)));
+    const snap = await getDocs(collection(db, 'productos'));
     const todos = snap.docs.map(d => mapProducto(d.data(), d.id));
-    return todos.filter(p =>
-      p.nombre.toLowerCase().includes(terminoLower) ||
-      (p.descripcion && p.descripcion.toLowerCase().includes(terminoLower)) ||
-      (p.categoria && p.categoria.toLowerCase().includes(terminoLower))
-    ).slice(0, maxResultados);
+    return todos
+      .filter(p => p.disponible)
+      .filter(p =>
+        p.nombre.toLowerCase().includes(terminoLower) ||
+        (p.descripcion && p.descripcion.toLowerCase().includes(terminoLower)) ||
+        (p.categoria && p.categoria.toLowerCase().includes(terminoLower)) ||
+        (p.etiquetas && p.etiquetas.some((e: string) => e.toLowerCase().includes(terminoLower))) ||
+        (p.codigoBarras && String(p.codigoBarras).includes(terminoLower))
+      )
+      .slice(0, maxResultados);
   } catch (e) {
     console.error('[busquedaExacta] Error:', e);
     return [];
@@ -166,18 +186,25 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 // ── Nivel 2: Búsqueda Semántica (Vector Search) ───────────────────────────────
 
 /**
- * Genera un embedding de 768 dimensiones usando la API de Gemini.
+ * Genera un embedding usando la API de Gemini.
+ * USA TODOS LOS DIMS producidos por el modelo (3072 para gemini-embedding-001)
+ * para máxima precisión semántica y consistencia con los embeddings guardados.
  */
 export async function generarEmbedding(texto: string): Promise<number[]> {
-  const apiKey = process.env.GEMINI_API_KEY || ['AQ.', 'Ab8RN6KY9zJuP7BjO-ppcsm4pwjHytFAeRfikDS_ln2zKAiarg'].join('');
+  const apiKey = process.env.GEMINI_API_KEY;
   const modelo = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY no configurada');
+  }
 
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(apiKey);
   const embeddingModel = genAI.getGenerativeModel({ model: modelo });
 
   const result = await embeddingModel.embedContent(texto);
-  return result.embedding.values.slice(0, 768);
+  // ⚡ Sin truncamiento: usar todos los dims del modelo para máxima precisión
+  return result.embedding.values;
 }
 
 /**
@@ -217,7 +244,7 @@ export function busquedaSemanticaConDocs(
   // Ordenar por puntuación semántica descendente
   productosConScore.sort((a, b) => b.score - a.score);
 
-  // Retornar top resultados con filtro de relevancia
+  // Retornar top resultados con filtro de relevancia mínima
   const resultados = productosConScore
     .filter(item => item.score > 0.35)
     .slice(0, maxResultados)
@@ -233,19 +260,20 @@ export function busquedaSemanticaConDocs(
 
 /**
  * Punto de entrada del servicio de búsqueda.
+ * Usa IAConfig cacheada para evitar round-trip extra a Firestore.
  */
 export async function buscar(termino: string, usarIA: boolean): Promise<SearchResult> {
   const inicio = Date.now();
   const terminoLimpio = termino.trim();
 
-  // Si la IA está deshabilitada o es un código de barras de más de 6 dígitos
+  // Si la IA está deshabilitada o es un código de barras de más de 6 dígitos → Nivel 1
   if (!usarIA || /^\d{6,}$/.test(terminoLimpio)) {
     const productos = await busquedaExacta(terminoLimpio);
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
   }
 
   try {
-    // ⚡ OPTIMIZACIÓN ULTRA-RÁPIDA: Ejecución en PARALELO de Gemini API y Firestore getDocs
+    // ⚡ PARALELO: Gemini embedding + Firestore getDocs al mismo tiempo
     const [embedding, snap] = await Promise.all([
       generarEmbedding(terminoLimpio),
       getDocs(collection(db, 'productos')),
@@ -254,8 +282,17 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
     let productos = busquedaSemanticaConDocs(embedding, snap.docs);
 
     if (productos.length === 0) {
-      productos = await busquedaExacta(terminoLimpio);
-      return { productos, nivel: 1, latencyMs: Date.now() - inicio };
+      // Fallback a Nivel 1 si la semántica no encontró nada relevante
+      const exactos = snap.docs
+        .map(d => mapProducto(d.data(), d.id))
+        .filter(p => p.disponible)
+        .filter(p =>
+          p.nombre.toLowerCase().includes(terminoLimpio.toLowerCase()) ||
+          (p.descripcion && p.descripcion.toLowerCase().includes(terminoLimpio.toLowerCase())) ||
+          (p.categoria && p.categoria.toLowerCase().includes(terminoLimpio.toLowerCase()))
+        )
+        .slice(0, 8);
+      return { productos: exactos, nivel: 1, latencyMs: Date.now() - inicio };
     }
 
     return { productos, nivel: 2, latencyMs: Date.now() - inicio };
@@ -265,4 +302,3 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
   }
 }
-
