@@ -25,7 +25,7 @@ interface IAComboModalProps {
 }
 
 const SUGERENCIAS = [
-  'Lonchera escolar para 3 días con S/ 20',
+  'Lonchera escolar para 3 días',
   'Desayuno para 4 personas',
   'Ingredientes básicos para la semana',
   'Kit de snacks para una tarde de películas',
@@ -33,7 +33,7 @@ const SUGERENCIAS = [
 ];
 
 export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
-  const { addToConsulta, showToast } = useTiendaStore();
+  const { addToConsulta, showToast, showPrices } = useTiendaStore();
   const [solicitud, setSolicitud] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [combo, setCombo] = useState<ComboResponse | null>(null);
@@ -176,7 +176,7 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
                       generarCombo();
                     }
                   }}
-                  placeholder="Ej: Lonchera escolar para 3 días con S/ 20..."
+                  placeholder="Ej: Lonchera escolar para 3 días..."
                   rows={3}
                   className="w-full resize-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 transition-all"
                 />
@@ -251,20 +251,24 @@ export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
                       <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{prod.nombre}</p>
                       <p className="text-xs text-slate-500">x{prod.cantidad}</p>
                     </div>
-                    <span className="text-sm font-bold text-emerald-600 flex-shrink-0">
-                      S/ {prod.subtotal.toFixed(2)}
-                    </span>
+                    {showPrices && (
+                      <span className="text-sm font-bold text-emerald-600 flex-shrink-0">
+                        S/ {prod.subtotal.toFixed(2)}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
 
               {/* Total */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
-                <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Total estimado</span>
-                <span className="text-lg font-black text-slate-800 dark:text-slate-100">
-                  S/ {combo.totalEstimado.toFixed(2)}
-                </span>
-              </div>
+              {showPrices && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
+                  <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Total estimado</span>
+                  <span className="text-lg font-black text-slate-800 dark:text-slate-100">
+                    S/ {combo.totalEstimado.toFixed(2)}
+                  </span>
+                </div>
+              )}
 
               {/* Botón "Buscar otro" */}
               <button
