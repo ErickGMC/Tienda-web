@@ -202,10 +202,7 @@ export async function generarEmbedding(texto: string): Promise<number[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const embeddingModel = genAI.getGenerativeModel({ model: modelo });
 
-  const result = await embeddingModel.embedContent({
-    content: { parts: [{ text: texto }] },
-    outputDimensionality: 768
-  });
+  const result = await embeddingModel.embedContent(texto);
   return result.embedding.values.slice(0, 768);
 }
 

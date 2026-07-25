@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
 
     const prompt = `
-Eres un asistente comercial inteligente y chef experto para un minimarket multisectorial peruano (que vende Abarrotes, Frutas/Verduras, Bebidas, Golosinas, Aseo y Limpieza, Ferretería, Librería, etc.). Tu objetivo es armar un combo super coherente, útil y comercialmente atractivo respondiendo al contexto de la solicitud del cliente.
+Eres un chef peruano especialista exclusivamente en Gastronomía Limeña Criolla Tradicional (Lima, Perú) y asistente comercial inteligente. Tu objetivo es armar un combo rigurosamente adaptado a las costumbres gastronómicas de Lima, Perú.
 
 SOLICITUD DEL CLIENTE:
 "${solicitud}"
@@ -90,28 +90,23 @@ SOLICITUD DEL CLIENTE:
 CATÁLOGO DISPONIBLE (solo usar estos productos):
 ${catalogoContexto}
 
-REGLAS DE COHERENCIA DE CATEGORÍA Y SENTIDO COMÚN:
-1. SEGURIDAD Y COHERENCIA DE CATEGORÍA (NUNCA MEZCLAR PRODUCTOS INCOMPATIBLES):
-   - ALIMENTOS Y RECETAS (Comida, Ensaladas, Postres): NUNCA incluyas productos de Limpieza (lejía, detergente), Ferretería (cinta aislante) ni desinfectantes.
-   - FIESTAS INFANTILES Y NIÑOS / LONCHERAS: Incluye golosinas, galletas, gaseosas, jugos o frutas (ej: Casino, Inca Kola, Plátano, Yogurt). NUNCA incluyas licores, cigarrillos ni químicos de limpieza.
-   - ASEO PERSONAL Y HIGIENE: Usa jabones o champú. NUNCA sugieras lejía ni desinfectantes de pisos para la higiene o aseo personal corporal.
-   - ASEO Y DESINFECCIÓN DEL HOGAR: Si la solicitud es para limpieza de casa o cocina, usa lejía y detergente. NUNCA sugieras alimentos sueltos en este contexto.
-   - FERRETERÍA Y ELECTRICIDAD: Si solicitan artículos de ferretería o reparación, usa cintas aislantes y herramientas. NUNCA mezcles con comida no empacada ni verduras.
+🇵🇪 RECETARIO RIGUROSO Y TRADICIÓN GASTRONÓMICA LIMEÑA CRIOLLA (LIMA, PERÚ):
+- Tallarines Rojos Limeños:
+  * INGREDIENTES MANDATORIOS DE TUCO LIMEÑO: Fideos (Don Vittorio / San Jorge), Pollo o Carne, Tomate, Zanahoria Fresca, "Laurel y Hongo" (OBLIGATORIO para el tuco limeño).
+  * COMPLEMENTOS PERMITIDOS LIMEÑOS: Queso Fresco (rallado), Papa Blanca (papa a la huancaína), Inca Kola.
+  * PROHIBICIÓN ABSOLUTA EN LIMA: PROHIBIDO INCLUIR HUEVO DE GALLINA. En la gastronomía limeña tradicional los tallarines rojos JAMÁS llevan huevo duro. NUNCA selecciones Huevo de Gallina para este plato.
 
-2. SUGERENCIAS COMPLEMENTARIAS DE VENTA CRUZADA (CROSS-SELLING CON SENTIDO COMÚN):
-   - Almuerzos / Comidas: Sugiere una bebida adecuada de acompañamiento (ej: Inca Kola o Agua Cielo) si está en el catálogo y explícalo en la descripción.
-   - Fiestas / Loncheras / Snacks: Sugiere galletas (ej: Casino), yogurt o frutas (ej: Plátano/Pera) como complemento.
+- Estofado de Pollo Limeño: Pollo, Papa Blanca, Zanahoria, Tomate, Arveja Fresca, Laurel y Hongo, Arroz. (PROHIBIDO: Fideos, Huevo de Gallina, Zapallo).
+- Locro de Zapallo Limeño: Zapallo Macre, Papa Blanca, Leche, Huevo de Gallina, Queso Fresco, Arroz. (PROHIBIDO: Tomate, Fideos).
+- Papa a la Huancaína Limeña: Papa Blanca, Leche, Huevo de Gallina, Aceituna, Queso. (PROHIBIDO: Fideos, Zapallo, Arroz).
 
-3. GUÍA DE RECETAS TRADICIONALES PERUANAS (Si aplica a comidas):
-   - Estofado de Pollo: Pollo, Papa Blanca, Zanahoria, Tomate, Arveja Fresca, Laurel y Hongo, Arroz. (NUNCA incluir Zapallo, Fideos ni Huevo).
-   - Locro de Zapallo: Zapallo Macre, Papa Blanca, Leche, Huevo, Queso, Arroz. (NUNCA incluir Tomate ni Fideos).
-   - Papa a la Huancaína: Papa Blanca, Leche, Huevo, Aceituna Entera, Queso. (NUNCA incluir Fideos, Zapallo ni Arroz).
-   - Tallarines Rojos: Fideos, Tomate, Pollo/Carne, Laurel y Hongo, Queso Fresco, Papa Blanca. (NUNCA incluir Arroz ni Zapallo).
-   - Caldo / Sopa: Fideos/Papa, Pollo/Carne, Huevo. (NUNCA incluir Arroz ni Zapallo).
-
-4. REGLA DE DESCRIPCIÓN 100% EXPLÍCITA:
-   - CADA UNO de los productos incluidos en la lista "productos" DEBE estar mencionado y justificado explícitamente en el texto de la "descripcion" (2-3 oraciones).
-5. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
+REGLAS DE COHERENCIA MULTISECTORIAL Y SEGURIDAD:
+1. ALIMENTOS Y RECETAS (Comida, Ensaladas, Postres): NUNCA incluyas productos de Limpieza (lejía, detergente), Ferretería (cinta aislante) ni desinfectantes.
+2. FIESTAS INFANTILES Y NIÑOS / LONCHERAS: Incluye golosinas, galletas, gaseosas, jugos o frutas (ej: Casino, Inca Kola, Plátano, Yogurt). NUNCA incluyas licores ni químicos de limpieza.
+3. ASEO Y DESINFECCIÓN DEL HOGAR: Si la solicitud es para limpieza de casa o cocina, usa lejía y detergente. NUNCA sugieras alimentos sueltos.
+4. EXCLUSIÓN TOTAL DE HUEVO EN TALLARINES ROJOS: Si la solicitud incluye "tallarines", NO incluyas Huevo de Gallina bajo ninguna circunstancia.
+5. INCLUSIÓN MANDATORIA DE LAUREL Y HONGO: Si la solicitud es "tallarines" o "estofado" y "Laurel y Hongo" está disponible, ES OBLIGATORIO INCLUIRLO.
+6. Coherencia Total en la Descripción: MENCIONA EXPLÍCITAMENTE en la "descripcion" CADA UNO de los productos incluidos en la lista "productos" (2-3 oraciones).
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
 {
@@ -146,12 +141,27 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
       return NextResponse.json({ error: 'Error al procesar la respuesta de la IA' }, { status: 500 });
     }
 
-    // 6. Mapear productos del LLM con datos reales de Firestore
+    // 6. Mapear productos del LLM con datos reales de Firestore y aplicar filtro de seguridad Limeña Criolla
     const productosMap = new Map(productosRelevantes.map(p => [p.id, p]));
+    const isTallarines = solicitud.toLowerCase().includes('tallarin');
+    const isEstofado = solicitud.toLowerCase().includes('estofado');
+
     const productosCombo: ProductoCombo[] = llmResponse.productos
-      .map(item => {
+      .map((item): ProductoCombo | null => {
         const prod = productosMap.get(item.id);
         if (!prod) return null;
+
+        // Post-filtro estricto Limeño Criollo
+        const nombreLower = prod.nombre.toLowerCase();
+        if (isTallarines && nombreLower.includes('huevo')) {
+          console.log('[Safety Filter Limeño] Excluido Huevo de Gallina para Tallarines Rojos');
+          return null;
+        }
+        if (isEstofado && (nombreLower.includes('fideos') || nombreLower.includes('zapallo') || nombreLower.includes('huevo'))) {
+          console.log('[Safety Filter Limeño] Excluido ingrediente incompatible para Estofado:', prod.nombre);
+          return null;
+        }
+
         return {
           id: prod.id,
           nombre: prod.nombre,
@@ -159,7 +169,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
           cantidad: item.cantidad,
           subtotal: prod.precio * item.cantidad,
           imagenUrl: prod.imagenUrl,
-        } as ProductoCombo;
+        };
       })
       .filter((p): p is ProductoCombo => p !== null);
 
