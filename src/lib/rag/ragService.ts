@@ -116,19 +116,63 @@ function mapProducto(docData: any, id: string): Producto {
   } as Producto;
 }
 
+// ── Caché en memoria de la colección de productos ────────────────────────────
+// Evita llamar getDocs(collection(db, 'productos')) en cada búsqueda. TTL: 60 segundos.
+
+export interface ProductoDocData {
+  id: string;
+  data: any;
+}
+
+let _productosCache: ProductoDocData[] | null = null;
+let _productosCacheTs = 0;
+const PRODUCTOS_CACHE_TTL_MS = 60_000; // 60 segundos
+
+/**
+ * Obtiene la colección completa de productos desde el caché o Firestore.
+ * Cachea los datos por 60 segundos en memoria del servidor Node.
+ */
+export async function getProductosCollectionDocs(): Promise<ProductoDocData[]> {
+  const now = Date.now();
+  if (_productosCache && (now - _productosCacheTs) < PRODUCTOS_CACHE_TTL_MS) {
+    return _productosCache;
+  }
+  try {
+    const snap = await getDocs(collection(db, 'productos'));
+    const result: ProductoDocData[] = snap.docs.map(d => ({
+      id: d.id,
+      data: d.data(),
+    }));
+    _productosCache = result;
+    _productosCacheTs = now;
+    return result;
+  } catch (e) {
+    console.error('[getProductosCollectionDocs] Error al leer productos de Firestore:', e);
+    return _productosCache || [];
+  }
+}
+
+/**
+ * Invalida el caché de productos manualmente si es necesario.
+ */
+export function invalidateProductosCache() {
+  _productosCache = null;
+  _productosCacheTs = 0;
+}
+
 // ── Nivel 1: Búsqueda Exacta ─────────────────────────────────────────────────
 
 /**
  * Búsqueda de texto clásica por nombre, descripción, categoría y etiquetas.
- * Costo: 0 créditos de IA. Filtrado en memoria sobre documentos ya cargados.
+ * Costo: 0 créditos de IA. Filtrado en memoria sobre documentos cacheados.
  */
 export async function busquedaExacta(termino: string, maxResultados = 8): Promise<Producto[]> {
   const terminoLower = termino.toLowerCase().trim();
   if (!terminoLower) return [];
 
   try {
-    const snap = await getDocs(collection(db, 'productos'));
-    const todos = snap.docs.map(d => mapProducto(d.data(), d.id));
+    const docsData = await getProductosCollectionDocs();
+    const todos = docsData.map(d => mapProducto(d.data, d.id));
     return todos
       .filter(p => p.disponible)
       .filter(p =>
@@ -207,15 +251,15 @@ export async function generarEmbedding(texto: string): Promise<number[]> {
 }
 
 /**
- * Búsqueda vectorial usando motor coseno resiliente en memoria.
+ * Búsqueda vectorial usando motor coseno resiliente en memoria sobre la colección cachead.
  */
 export async function busquedaSemantica(
   queryEmbedding: number[],
   maxResultados = 6
 ): Promise<Producto[]> {
   try {
-    const snap = await getDocs(collection(db, 'productos'));
-    return busquedaSemanticaConDocs(queryEmbedding, snap.docs, maxResultados);
+    const docsData = await getProductosCollectionDocs();
+    return busquedaSemanticaConDocs(queryEmbedding, docsData, maxResultados);
   } catch (err: any) {
     console.error('[RAG] Fallback por similitud coseno falló:', err);
     return [];
@@ -232,8 +276,9 @@ export function busquedaSemanticaConDocs(
 ): Producto[] {
   const productosConScore = productosDocs
     .map(docSnap => {
-      const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
-      const producto = mapProducto(data, docSnap.id);
+      const data = typeof docSnap.data === 'function' ? docSnap.data() : (docSnap.data || docSnap);
+      const productoId = docSnap.id || (docSnap.data ? docSnap.id : '');
+      const producto = mapProducto(data, productoId);
       const vec = extractEmbeddingArray(data.embedding);
       const score = vec ? cosineSimilarity(queryEmbedding, vec) : 0;
       return { producto, score };
@@ -259,7 +304,7 @@ export function busquedaSemanticaConDocs(
 
 /**
  * Punto de entrada del servicio de búsqueda.
- * Usa IAConfig cacheada para evitar round-trip extra a Firestore.
+ * Usa IAConfig cacheada y colección de productos cacheados para evitar round-trip extra a Firestore.
  */
 export async function buscar(termino: string, usarIA: boolean): Promise<SearchResult> {
   const inicio = Date.now();
@@ -272,18 +317,18 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
   }
 
   try {
-    // ⚡ PARALELO: Gemini embedding + Firestore getDocs al mismo tiempo
-    const [embedding, snap] = await Promise.all([
+    // ⚡ PARALELO: Gemini embedding + Productos cacheados en memoria
+    const [embedding, docsData] = await Promise.all([
       generarEmbedding(terminoLimpio),
-      getDocs(collection(db, 'productos')),
+      getProductosCollectionDocs(),
     ]);
 
-    let productos = busquedaSemanticaConDocs(embedding, snap.docs);
+    let productos = busquedaSemanticaConDocs(embedding, docsData);
 
     if (productos.length === 0) {
       // Fallback a Nivel 1 si la semántica no encontró nada relevante
-      const exactos = snap.docs
-        .map(d => mapProducto(d.data(), d.id))
+      const exactos = docsData
+        .map(d => mapProducto(d.data, d.id))
         .filter(p => p.disponible)
         .filter(p =>
           p.nombre.toLowerCase().includes(terminoLimpio.toLowerCase()) ||

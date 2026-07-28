@@ -15,11 +15,20 @@
 
 import { NextResponse } from 'next/server';
 import { buscar, getIAConfig } from '@/lib/rag/ragService';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimiter';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+    const limit = checkRateLimit(clientIp, 25, 60_000); // 25 búsquedas/min por IP
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'RATE_LIMIT_EXCEEDED', mensaje: 'Demasiadas búsquedas consecutivas.' },
+        { status: 429 }
+      );
+    }
     const body = await request.json();
     const { termino } = body;
 

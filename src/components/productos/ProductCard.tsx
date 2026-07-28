@@ -53,14 +53,16 @@ export default function ProductCard({ producto }: ProductCardProps) {
             src={producto.imagenUrl || ''} 
             alt={producto.nombre}
             fill
-            unoptimized={true}
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${gradient} opacity-80 flex items-center justify-center`}>
-            <span className="text-white/80 font-bold text-4xl uppercase">
+          <div className="w-full h-full bg-slate-100 dark:bg-slate-800/80 flex flex-col items-center justify-center p-4 text-center border-b border-slate-200 dark:border-slate-800">
+            <span className="text-amber-500 font-bold text-3xl uppercase tracking-wider mb-1">
               {producto.nombre.substring(0, 2)}
+            </span>
+            <span className="text-[10px] text-slate-400 font-medium line-clamp-1 max-w-[80%]">
+              {producto.categoria}
             </span>
           </div>
         )}

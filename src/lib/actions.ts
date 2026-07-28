@@ -3,8 +3,8 @@ import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, DocumentSnap
 import { db } from './firebase/config';
 import { Producto } from '@/types/producto';
 
-// Revalidar cada 10 segundos para ver los cambios del POS (precios, config) casi al instante
-const REVALIDATE_TIME = 10;
+// Revalidar cada 300 segundos (5 minutos) para minimizar lecturas de Firestore
+const REVALIDATE_TIME = 300;
 
 export interface Banner {
   id: string;
@@ -238,14 +238,12 @@ export const getComunidadConfig = unstable_cache(
   { revalidate: REVALIDATE_TIME, tags: ['web_config'] }
 );
 
-// Registrar evento de Analytics (No usar cache aquí)
+// Registrar evento de Analytics (no realiza escrituras pagadas en Firestore por cada clic)
 export async function logAnalyticsEvent(type: 'pageview' | 'whatsapp_click', details: Record<string, unknown> = {}) {
   try {
-    await addDoc(collection(db, 'analytics_events'), {
-      type,
-      ...details,
-      timestamp: serverTimestamp()
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug(`[Analytics Event] (${type}):`, details);
+    }
     return true;
   } catch (error) {
     console.error("Error logging analytics event:", error);

@@ -21,6 +21,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getIAConfig, generarEmbedding, busquedaSemantica } from '@/lib/rag/ragService';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimiter';
 
 export interface ProductoCombo {
   id: string;
@@ -46,11 +47,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'IA_DISABLED', mensaje: 'El servicio de IA de combos está temporalmente deshabilitado.' }, { status: 503 });
     }
 
+    // 1.1 Rate Limiting por IP
+    const clientIp = getClientIp(request);
+    const limit = checkRateLimit(clientIp, 10, 60_000); // 10 peticiones/min por IP
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'RATE_LIMIT_EXCEEDED', mensaje: 'Demasiadas solicitudes. Por favor intente en un minuto.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { solicitud } = body;
 
-    if (!solicitud || typeof solicitud !== 'string' || solicitud.trim().length < 5) {
-      return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 });
+    if (!solicitud || typeof solicitud !== 'string' || solicitud.trim().length < 5 || solicitud.length > 300) {
+      return NextResponse.json({ error: 'Solicitud inválida (debe tener entre 5 y 300 caracteres)' }, { status: 400 });
     }
 
     // 2. Generar embedding de la solicitud y recuperar candidatos del catálogo (pool ampliado a 35)
@@ -75,7 +86,11 @@ export async function POST(request: Request) {
       .join('\n');
 
     // 4. Invocar Gemini (Modelo Principal con Respaldo Automático)
-    const apiKey = process.env.GEMINI_API_KEY || ['AQ.', 'Ab8RN6KY9zJuP7BjO-ppcsm4pwjHytFAeRfikDS_ln2zKAiarg'].join('');
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('[combos-ia] ❌ GEMINI_API_KEY no está configurada.');
+      return NextResponse.json({ error: 'Servicio de IA deshabilitado' }, { status: 500 });
+    }
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const primaryModelName = process.env.GEMINI_GENERATIVE_MODEL || 'gemini-3.1-flash-lite';
