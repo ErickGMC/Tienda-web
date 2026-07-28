@@ -67,17 +67,21 @@ export default function ProductCard({ producto }: ProductCardProps) {
           </div>
         )}
         
-        {/* Category Badge */}
-        <div className="absolute top-2 left-2 px-2 py-0.5 sm:top-3 sm:left-3 sm:px-3 sm:py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm">
-          {producto.categoria}
-        </div>
-
-        {/* Destacado Badge */}
-        {producto.destacado && (
-          <div className="absolute top-2 right-2 px-2 py-0.5 sm:top-3 sm:right-3 sm:px-3 sm:py-1 bg-amber-500 rounded-full text-[10px] sm:text-xs font-bold text-white shadow-sm flex items-center gap-1">
-            <Star className="w-3 h-3 fill-white" /> Destacado
+        {/* Badges Overlay Container - Flexbox prevent overlap */}
+        <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex items-center justify-between gap-1 pointer-events-none z-10">
+          {/* Category Badge */}
+          <div className="px-2 py-0.5 sm:px-3 sm:py-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-full text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm truncate max-w-[60%] sm:max-w-[65%] pointer-events-auto">
+            {producto.categoria}
           </div>
-        )}
+
+          {/* Destacado Badge */}
+          {producto.destacado && (
+            <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500 rounded-full text-[10px] sm:text-xs font-bold text-white shadow-sm flex items-center gap-1 shrink-0 pointer-events-auto">
+              <Star className="w-3 h-3 fill-white shrink-0" />
+              <span className="text-[10px] sm:text-xs">Destacado</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Content Area */}
@@ -92,12 +96,17 @@ export default function ProductCard({ producto }: ProductCardProps) {
 
         <div className="mt-auto">
           {showPrices && (
-            <div className="mb-3 sm:mb-4">
-              <span className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white">
-                S/ {producto.precio.toFixed(2)}
-              </span>
-              <span className="text-[10px] sm:text-xs text-slate-500 ml-1">
-                / {producto.unidadMedida}
+            <div className="mb-3 sm:mb-4 flex items-baseline justify-between">
+              <div>
+                <span className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white">
+                  S/ {producto.precio.toFixed(2)}
+                </span>
+                <span className="text-[10px] sm:text-xs text-slate-500 ml-1">
+                  / {producto.unidadMedida}
+                </span>
+              </div>
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
+                En stock
               </span>
             </div>
           )}
@@ -106,22 +115,22 @@ export default function ProductCard({ producto }: ProductCardProps) {
             <button 
               onClick={handleConsultarWhatsapp}
               title="Consultar por WhatsApp"
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white font-medium transition-colors text-xs sm:text-sm"
+              className="flex-1 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white font-semibold transition-all duration-200 text-xs sm:text-sm shadow-sm active:scale-95"
             >
-              <MessageCircle className="w-4 h-4 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Consultar</span>
+              <MessageCircle className="w-4 h-4 shrink-0" />
+              <span>Consultar</span>
             </button>
             <button 
               onClick={handleAddToList}
               disabled={estaEnLista}
               title={estaEnLista ? "Ya en la lista" : "Agregar a la lista"}
-              className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl transition-all duration-300 shrink-0 ${
+              className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl transition-all duration-300 shrink-0 active:scale-95 ${
                 estaEnLista 
-                  ? 'bg-slate-100 dark:bg-slate-800 text-amber-500 cursor-not-allowed' 
-                  : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white'
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 cursor-not-allowed border border-emerald-200 dark:border-emerald-800' 
+                  : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white border border-amber-200/50 dark:border-amber-500/20'
               }`}
             >
-              {estaEnLista ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              {estaEnLista ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : <Plus className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
