@@ -17,8 +17,8 @@ import {
   collection,
   getDocs,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
-import { Producto } from '@/types/producto';
+import { db } from '../firebase/config';
+import { Producto } from '../../types/producto';
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -195,7 +195,7 @@ export async function busquedaExacta(termino: string, maxResultados = 8): Promis
  * Extrae el array de floats de embedding sin importar cómo esté serializado en Firestore.
  * Soporta VectorValue, MapValue, ArrayValue, _values, etc.
  */
-function extractEmbeddingArray(data: any): number[] | null {
+export function extractEmbeddingArray(data: any): number[] | null {
   if (!data) return null;
   if (Array.isArray(data)) return data;
   if (typeof data.toArray === 'function') return data.toArray();
@@ -212,7 +212,7 @@ function extractEmbeddingArray(data: any): number[] | null {
  * Calcula la similitud coseno entre dos vectores numéricos.
  * Retorna un valor entre -1 y 1 (o 0 si vectores nulos).
  */
-function cosineSimilarity(vecA: number[], vecB: number[]): number {
+export function cosineSimilarity(vecA: number[], vecB: number[]): number {
   if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0) return 0;
   let dot = 0;
   let normA = 0;
