@@ -96,7 +96,7 @@ function mapFirestoreBanner(doc: DocumentSnapshot | QueryDocumentSnapshot): Bann
     id: doc.id,
     title: data.title || '',
     subtitle: data.subtitle || '',
-    imageUrl: data.imageUrl || '',
+    imageUrl: data.imageUrl || data.imagenLocal || '',
     badgeText: data.badgeText || '',
     ctaText: data.ctaText || 'Ver más',
     ctaActionCategory: data.ctaActionCategory || 'Todas',
