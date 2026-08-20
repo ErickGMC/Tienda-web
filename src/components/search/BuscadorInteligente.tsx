@@ -34,7 +34,7 @@ interface BuscadorInteligenteProps {
 
 // ── Constantes ───────────────────────────────────────────────────────────────
 
-const DEBOUNCE_MS = 400; // ms de espera tras el último teclazo antes de buscar
+const DEBOUNCE_MS = 200; // ms de espera ultra-reactiva tras el último teclazo
 const MIN_CHARS = 2;     // mínimo de caracteres para activar la búsqueda
 
 export default function BuscadorInteligente({

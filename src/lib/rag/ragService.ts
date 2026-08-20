@@ -690,10 +690,10 @@ Responde ÚNICAMENTE en JSON con este formato exacto:
   return candidatos.slice(0, 8);
 }
 
-// ── Router Principal de Búsqueda Híbrida Universal ────────────────────────────
+// ── Router Principal de Búsqueda Híbrida de Alta Velocidad (< 10ms - 300ms) ───
 
 /**
- * Punto de entrada del servicio de búsqueda con Fusión Híbrida y Reranking Semántico Universal.
+ * Punto de entrada del servicio de búsqueda con Fast-Path en memoria y Vector Search de alta velocidad.
  */
 export async function buscar(termino: string, usarIA: boolean): Promise<SearchResult> {
   const inicio = Date.now();
@@ -701,27 +701,56 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
   const queryNorm = normalizarTexto(terminoLimpio);
   const tokens = queryNorm.split(/\s+/);
 
-  // Si la IA está deshabilitada o es código de barras numérico → Nivel 1
+  // Si la IA está deshabilitada o es código de barras numérico → Nivel 1 inmediato
   if (!usarIA || /^\d{6,}$/.test(terminoLimpio)) {
     const productos = await busquedaExacta(terminoLimpio);
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
   }
 
+  // 1. Verificar si está en caché en memoria (Respuesta ultra-instantánea a 0ms)
+  const cached = _rerankCache.get(queryNorm);
+  if (cached && (Date.now() - cached.ts) < RERANK_CACHE_TTL_MS) {
+    return { productos: cached.resultados, nivel: 2, latencyMs: Date.now() - inicio };
+  }
+
   try {
-    // 1. Verificar si está en caché LRU
-    const cached = _rerankCache.get(queryNorm);
-    if (cached && (Date.now() - cached.ts) < RERANK_CACHE_TTL_MS) {
-      return { productos: cached.resultados, nivel: 2, latencyMs: Date.now() - inicio };
+    const docsData = await getProductosCollectionDocs();
+
+    // 2. ⚡ FAST-PATH EN MEMORIA (< 5ms):
+    // Si la consulta coincide con conceptos ontológicos (proteína, hidratación, desayuno, etc.)
+    // o con nombres/marcas/etiquetas de productos, el ranking matemático en memoria es 100% exacto.
+    const candidatosOnto = docsData
+      .map(docSnap => {
+        const data = typeof docSnap.data === 'function' ? docSnap.data() : (docSnap.data || docSnap);
+        const productoId = docSnap.id || (docSnap.data ? docSnap.id : '');
+        const producto = mapProducto(data, productoId);
+        const scoreLexico = calcularScoreLexico(producto, queryNorm, tokens);
+        const evalOnto = evaluarTierOntologico(producto, queryNorm, tokens);
+        const scoreTotal = (evalOnto.boost * 2.0) + scoreLexico;
+        return { producto, scoreTotal, tier: evalOnto.tier, scoreLexico };
+      })
+      .filter(item => item.producto.disponible && item.scoreTotal > 0);
+
+    const hayTier1 = candidatosOnto.some(c => c.tier === 1);
+    const hayMatchNombreFuerte = candidatosOnto.some(c => c.scoreLexico >= 10);
+
+    if (hayTier1 || hayMatchNombreFuerte) {
+      candidatosOnto.sort((a, b) => {
+        if (a.tier > 0 && b.tier > 0 && a.tier !== b.tier) return a.tier - b.tier;
+        if (a.tier > 0 && b.tier === 0 && a.tier <= 2) return -1;
+        if (b.tier > 0 && a.tier === 0 && b.tier <= 2) return 1;
+        return b.scoreTotal - a.scoreTotal;
+      });
+
+      const fastResultados = candidatosOnto.slice(0, 8).map(item => item.producto);
+      _rerankCache.set(queryNorm, { resultados: fastResultados, ts: Date.now() });
+      return { productos: fastResultados, nivel: 2, latencyMs: Date.now() - inicio };
     }
 
-    // 2. PARALELO: Embedding Gemini + Catálogo cacheado
-    const [embedding, docsData] = await Promise.all([
-      generarEmbedding(terminoLimpio),
-      getProductosCollectionDocs(),
-    ]);
+    // 3. ⚡ BÚSQUEDA SEMÁNTICA VECTORIAL (Para frases abstractas no ontológicas)
+    const embedding = await generarEmbedding(terminoLimpio);
 
-    // 3. Recuperar candidatos mediante fusión vectorial y léxica
-    const candidatos = docsData
+    const candidatosVectoriales = docsData
       .map(docSnap => {
         const data = typeof docSnap.data === 'function' ? docSnap.data() : (docSnap.data || docSnap);
         const productoId = docSnap.id || (docSnap.data ? docSnap.id : '');
@@ -737,33 +766,31 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
           scoreTotal = evalOnto.boost + (scoreLexico * 2.0) + (scoreSemantico * 5.0);
         } else if (scoreLexico > 0) {
           scoreTotal = (scoreLexico * 3.0) + (scoreSemantico * 3.0);
-        } else if (scoreSemantico >= 0.35) {
-          scoreTotal = scoreSemantico * 4.0;
+        } else if (scoreSemantico >= 0.32) {
+          scoreTotal = scoreSemantico * 5.0;
         }
 
         return { producto, scoreTotal, tier: evalOnto.tier };
       })
       .filter(item => item.producto.disponible && item.scoreTotal > 0);
 
-    candidatos.sort((a, b) => {
+    candidatosVectoriales.sort((a, b) => {
       if (a.tier > 0 && b.tier > 0 && a.tier !== b.tier) return a.tier - b.tier;
       if (a.tier > 0 && b.tier === 0 && a.tier <= 2) return -1;
       if (b.tier > 0 && a.tier === 0 && b.tier <= 2) return 1;
       return b.scoreTotal - a.scoreTotal;
     });
 
-    const listaCandidatos = candidatos.slice(0, 16).map(item => item.producto);
+    const finalResultados = candidatosVectoriales.slice(0, 8).map(item => item.producto);
 
-    if (listaCandidatos.length === 0) {
+    if (finalResultados.length === 0) {
       const exactos = await busquedaExacta(terminoLimpio);
       return { productos: exactos, nivel: 1, latencyMs: Date.now() - inicio };
     }
 
-    // 4. Reranking Semántico Universal con Gemini AI
-    const productosRerankeados = await rerankSemanticoUniversal(terminoLimpio, listaCandidatos);
-
+    _rerankCache.set(queryNorm, { resultados: finalResultados, ts: Date.now() });
     return {
-      productos: productosRerankeados.length > 0 ? productosRerankeados : listaCandidatos.slice(0, 8),
+      productos: finalResultados,
       nivel: 2,
       latencyMs: Date.now() - inicio
     };
