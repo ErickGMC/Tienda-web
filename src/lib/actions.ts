@@ -3,8 +3,8 @@ import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, DocumentSnap
 import { db } from './firebase/config';
 import { Producto } from '@/types/producto';
 
-// Revalidar cada 300 segundos (5 minutos) para minimizar lecturas de Firestore
-const REVALIDATE_TIME = 300;
+// Revalidar cada 30 segundos para actualización rápida de banners y catálogo
+const REVALIDATE_TIME = 30;
 
 export interface Banner {
   id: string;

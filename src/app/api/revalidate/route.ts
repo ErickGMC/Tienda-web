@@ -44,8 +44,7 @@ export async function POST(request: Request) {
 
   for (const tag of tagsToRevalidate) {
     try {
-      // Next.js 16+ requiere el segundo argumento 'profile' en revalidateTag
-      revalidateTag(tag, 'default');
+      revalidateTag(tag);
       revalidated.push(tag);
     } catch (err: any) {
       console.warn(`[revalidate] Error al revalidar tag "${tag}":`, err.message);
