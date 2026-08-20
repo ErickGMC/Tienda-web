@@ -20,19 +20,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
   ]
   const gradient = placeholderGradients[producto.nombre.length % placeholderGradients.length]
 
-  const handleConsultarWhatsapp = async () => {
-    // Log analytics
-    try {
-      const { logAnalyticsEvent } = await import('@/lib/actions');
-      await logAnalyticsEvent('whatsapp_click', {
-        source: 'product_card',
-        productId: producto.id,
-        productName: producto.nombre
-      });
-    } catch (e) {
-      console.warn('Analytics error', e);
-    }
-
+  const handleConsultarWhatsapp = () => {
     const numero = config?.whatsapp || empresa?.telefono || "51970560023";
     const mensaje = `Hola, quisiera consultar por el producto: *${producto.nombre}*`;
     window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');

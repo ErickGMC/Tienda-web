@@ -160,29 +160,174 @@ export function invalidateProductosCache() {
   _productosCacheTs = 0;
 }
 
-// ── Nivel 1: Búsqueda Exacta ─────────────────────────────────────────────────
+// ── Normalización de Texto y Diccionario Peruano ──────────────────────────
 
 /**
- * Búsqueda de texto clásica por nombre, descripción, categoría y etiquetas.
- * Costo: 0 créditos de IA. Filtrado en memoria sobre documentos cacheados.
+ * Normaliza cadenas quitando tildes, signos y espacios redundantes.
+ */
+export function normalizarTexto(texto: string): string {
+  return (texto || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Quita tildes: á->a, é->e, etc.
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Diccionario de modismos, jergas y sinónimos de compras habituales en Perú.
+ */
+const DICCIONARIO_PERUANO: Record<string, string[]> = {
+  // Abarrotes y Almuerzo
+  arroz: ['arroz', 'arrocito', 'faraon', 'extra'],
+  fideos: ['fideos', 'fideo', 'tallarin', 'tallarines', 'pasta', 'espagueti', 'don vittorio', 'san jorge'],
+  leche: ['leche', 'lechita', 'gloria', 'evaporada', 'tarro', 'lacteo'],
+  queso: ['queso', 'quesito', 'fresco', 'lacteo'],
+  yogurt: ['yogurt', 'yogur', 'frutado', 'gloria', 'bebible'],
+  huevo: ['huevo', 'huevos', 'huevito', 'huevitos', 'gallina', 'postura'],
+  azucar: ['azucar', 'rubia', 'dulce'],
+  sal: ['sal', 'sal de mar', 'marina', 'mar'],
+  harina: ['harina', 'trigo', 'reposteria'],
+  aderezo: ['laurel', 'hongo', 'aderezo', 'tuco', 'especias', 'condimento'],
+  lenteja: ['lenteja', 'lentejas', 'menestra', 'lentejita', 'bebe'],
+  aceituna: ['aceituna', 'aceitunas', 'oliva', 'botija'],
+  pollo: ['pollo', 'carne', 'pechuga', 'presa', 'almuerzo', 'segundo'],
+
+  // Bebidas e Hidratación
+  gaseosa: ['gaseosa', 'gaseosita', 'soda', 'refresco', 'inca kola', 'coca cola', 'kr', 'kola real', 'bebida'],
+  agua: ['agua', 'cielo', 'mesa', 'mineral', 'hidratacion', 'botella'],
+  rehidratante: ['sporade', 'gatorade', 'rehidratante', 'electrolitos', 'deporte', 'ejercicio', 'sudor', 'isotonica', 'bebida rehidratante'],
+  aloe: ['aloe', 'sabila', 'bio', 'regenerador', 'saludable'],
+  chela: ['cerveza', 'trago', 'bebidas', 'licor'],
+
+  // Frutas y Verduras
+  platano: ['platano', 'banana', 'seda', 'fruta', 'potasio'],
+  pera: ['pera', 'fruta', 'frutas', 'jugosa'],
+  papa: ['papa', 'papas', 'blanca', 'tuberculo', 'guarnicion', 'almuerzo'],
+  cebolla: ['cebolla', 'aderezo', 'verdura'],
+  tomate: ['tomate', 'ensalada', 'verdura'],
+  zanahoria: ['zanahoria', 'verdura', 'hortaliza'],
+  espinaca: ['espinaca', 'verdura', 'hojas'],
+  zapallo: ['zapallo', 'macre', 'locro', 'sopa'],
+  arveja: ['arveja', 'arvejita', 'legumbre', 'verdura'],
+
+  // Desayuno / Lonche / Comidas Rápidas
+  pan: ['pan', 'frances', 'desayuno', 'lonche', 'pancito'],
+  patasca: ['patasca', 'sopa', 'mondongo', 'caldo'],
+  carnero: ['carnero', 'caldo', 'sopa', 'cordero'],
+  almuerzo: ['menu', 'almuerzo', 'comida', 'segundo', 'plato', 'pollo', 'arroz'],
+
+  // Golosinas y Snacks
+  galleta: ['galleta', 'galletas', 'casino', 'morochas', 'taco', 'rellena', 'snack', 'antojo'],
+  chocolate: ['chocolate', 'sublime', 'nestle', 'cacao', 'antojo', 'dulce'],
+  lentejitas: ['lentejas', 'confitadas', 'grageas', 'nestle', 'dulces', 'caramelo'],
+
+  // Limpieza y Hogar
+  lejia: ['clorox', 'lejia', 'desinfectante', 'limpieza', 'aseo', 'cloro'],
+  cinta: ['cinta', 'aislante', 'ferreteria', 'electricidad']
+};
+
+/**
+ * Calcula la puntuación léxica de un producto contra una consulta.
+ */
+function calcularScoreLexico(producto: Producto, queryNorm: string, tokens: string[]): number {
+  const nombreNorm = normalizarTexto(producto.nombre);
+  const descNorm = normalizarTexto(producto.descripcion || '');
+  const catNorm = normalizarTexto(producto.categoria || '');
+  const etiqsNorm = (producto.etiquetas || []).map(e => normalizarTexto(e));
+  const codigo = String(producto.codigoBarras || '').trim();
+
+  let score = 0;
+
+  // 1. Coincidencia exacta de código de barras
+  if (codigo && codigo === queryNorm) {
+    return 15.0;
+  }
+
+  // 2. Coincidencia total o prefijo en el nombre
+  if (nombreNorm === queryNorm) {
+    score += 8.0;
+  } else if (nombreNorm.startsWith(queryNorm)) {
+    score += 5.5;
+  } else if (nombreNorm.includes(queryNorm)) {
+    score += 4.0;
+  }
+
+  // 3. Coincidencia por tokens individuales
+  let tokensDirectosNombre = 0;
+  let tokensSinonimosNombre = 0;
+  let tokensOtros = 0;
+
+  for (const token of tokens) {
+    if (token.length < 2) continue;
+    // Ignorar stop words comunes en español
+    if (['de', 'la', 'el', 'en', 'para', 'con', 'un', 'una', 'los', 'las', 'del', 'al'].includes(token)) {
+      continue;
+    }
+
+    // Coincidencia directa en el nombre
+    if (nombreNorm.includes(token)) {
+      tokensDirectosNombre++;
+      if (nombreNorm.startsWith(token)) {
+        tokensDirectosNombre += 0.5;
+      }
+    } else {
+      // Coincidencia por sinónimos en el nombre
+      let encontroSinonimo = false;
+      for (const [clave, sinonimos] of Object.entries(DICCIONARIO_PERUANO)) {
+        if (token === clave || sinonimos.includes(token)) {
+          if (nombreNorm.includes(clave) || sinonimos.some(s => nombreNorm.includes(s))) {
+            tokensSinonimosNombre++;
+            encontroSinonimo = true;
+            break;
+          }
+        }
+      }
+
+      // Si no fue en nombre, buscar en etiquetas, categoría y descripción
+      if (!encontroSinonimo) {
+        if (etiqsNorm.some(et => et.includes(token))) {
+          tokensOtros += 1.0;
+        } else if (catNorm.includes(token)) {
+          tokensOtros += 0.7;
+        } else if (descNorm.includes(token)) {
+          tokensOtros += 0.3;
+        }
+      }
+    }
+  }
+
+  score += (tokensDirectosNombre * 3.5);
+  score += (tokensSinonimosNombre * 2.5);
+  score += (tokensOtros * 0.8);
+
+  return score;
+}
+
+// ── Nivel 1: Búsqueda Exacta / Léxica ─────────────────────────────────────────
+
+/**
+ * Búsqueda de texto por nombre, descripción, categoría y etiquetas con Reranking léxico.
  */
 export async function busquedaExacta(termino: string, maxResultados = 8): Promise<Producto[]> {
-  const terminoLower = termino.toLowerCase().trim();
-  if (!terminoLower) return [];
+  const queryNorm = normalizarTexto(termino);
+  if (!queryNorm) return [];
+  const tokens = queryNorm.split(/\s+/);
 
   try {
     const docsData = await getProductosCollectionDocs();
-    const todos = docsData.map(d => mapProducto(d.data, d.id));
-    return todos
-      .filter(p => p.disponible)
-      .filter(p =>
-        p.nombre.toLowerCase().includes(terminoLower) ||
-        (p.descripcion && p.descripcion.toLowerCase().includes(terminoLower)) ||
-        (p.categoria && p.categoria.toLowerCase().includes(terminoLower)) ||
-        (p.etiquetas && p.etiquetas.some((e: string) => e.toLowerCase().includes(terminoLower))) ||
-        (p.codigoBarras && String(p.codigoBarras).includes(terminoLower))
-      )
-      .slice(0, maxResultados);
+    const productosConScore = docsData
+      .map(d => {
+        const prod = mapProducto(d.data, d.id);
+        const score = calcularScoreLexico(prod, queryNorm, tokens);
+        return { prod, score };
+      })
+      .filter(item => item.prod.disponible && item.score > 0);
+
+    productosConScore.sort((a, b) => b.score - a.score);
+
+    return productosConScore.slice(0, maxResultados).map(item => item.prod);
   } catch (e) {
     console.error('[busquedaExacta] Error:', e);
     return [];
@@ -230,9 +375,7 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
 // ── Nivel 2: Búsqueda Semántica (Vector Search) ───────────────────────────────
 
 /**
- * Genera un embedding usando la API de Gemini.
- * USA TODOS LOS DIMS producidos por el modelo (3072 para gemini-embedding-001)
- * para máxima precisión semántica y consistencia con los embeddings guardados.
+ * Genera un embedding usando la API de Gemini (768 dimensiones nativas).
  */
 export async function generarEmbedding(texto: string): Promise<number[]> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -246,12 +389,20 @@ export async function generarEmbedding(texto: string): Promise<number[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const embeddingModel = genAI.getGenerativeModel({ model: modelo });
 
-  const result = await embeddingModel.embedContent(texto);
-  return result.embedding.values.slice(0, 768);
+  try {
+    const result = await embeddingModel.embedContent({
+      content: { role: 'user', parts: [{ text: texto }] },
+      outputDimensionality: 768
+    } as any);
+    return result.embedding.values.slice(0, 768);
+  } catch (e) {
+    const fallback = await embeddingModel.embedContent(texto);
+    return fallback.embedding.values.slice(0, 768);
+  }
 }
 
 /**
- * Búsqueda vectorial usando motor coseno resiliente en memoria sobre la colección cachead.
+ * Búsqueda vectorial sobre la colección cachead.
  */
 export async function busquedaSemantica(
   queryEmbedding: number[],
@@ -267,7 +418,7 @@ export async function busquedaSemantica(
 }
 
 /**
- * Procesa los documentos cargados y calcula la similitud coseno de forma síncrona/ultra-rápida.
+ * Procesa los documentos cargados y calcula la similitud coseno de forma síncrona.
  */
 export function busquedaSemanticaConDocs(
   queryEmbedding: number[],
@@ -285,32 +436,32 @@ export function busquedaSemanticaConDocs(
     })
     .filter(item => item.producto.disponible);
 
-  // Ordenar por puntuación semántica descendente
   productosConScore.sort((a, b) => b.score - a.score);
 
-  // Retornar top resultados con filtro de relevancia mínima
+  // Retornar top resultados con umbral semántico de calidad
   const resultados = productosConScore
-    .filter(item => item.score > 0.35)
+    .filter(item => item.score >= 0.46)
     .slice(0, maxResultados)
     .map(item => item.producto);
 
   if (resultados.length > 0) return resultados;
 
-  // Si la similitud estricta fue baja, retornar los top sin corte de umbral
-  return productosConScore.slice(0, maxResultados).map(item => item.producto);
+  // Fallback si ningún score superó 0.46 pero hay resultados disponibles
+  return productosConScore.slice(0, Math.min(3, maxResultados)).map(item => item.producto);
 }
 
-// ── Router Principal de Búsqueda ─────────────────────────────────────────────
+// ── Router Principal de Búsqueda Híbrida ──────────────────────────────────────
 
 /**
- * Punto de entrada del servicio de búsqueda.
- * Usa IAConfig cacheada y colección de productos cacheados para evitar round-trip extra a Firestore.
+ * Punto de entrada del servicio de búsqueda con Fusión Híbrida y Reranking.
  */
 export async function buscar(termino: string, usarIA: boolean): Promise<SearchResult> {
   const inicio = Date.now();
   const terminoLimpio = termino.trim();
+  const queryNorm = normalizarTexto(terminoLimpio);
+  const tokens = queryNorm.split(/\s+/);
 
-  // Si la IA está deshabilitada o es un código de barras de más de 6 dígitos → Nivel 1
+  // Si la IA está deshabilitada o es código de barras numérico → Nivel 1
   if (!usarIA || /^\d{6,}$/.test(terminoLimpio)) {
     const productos = await busquedaExacta(terminoLimpio);
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
@@ -323,25 +474,44 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
       getProductosCollectionDocs(),
     ]);
 
-    let productos = busquedaSemanticaConDocs(embedding, docsData);
+    // FUSIÓN HÍBRIDA: Calcular Score Léxico + Score Semántico
+    const candidatos = docsData
+      .map(docSnap => {
+        const data = typeof docSnap.data === 'function' ? docSnap.data() : (docSnap.data || docSnap);
+        const productoId = docSnap.id || (docSnap.data ? docSnap.id : '');
+        const producto = mapProducto(data, productoId);
+        
+        const scoreLexico = calcularScoreLexico(producto, queryNorm, tokens);
+        const vec = extractEmbeddingArray(data.embedding);
+        const scoreSemantico = vec ? cosineSimilarity(embedding, vec) : 0;
+
+        // Puntuación compuesta:
+        // Si hay coincidencia de palabras/sinónimos directa, tiene prioridad dominante.
+        // La semántica aporta desempate y relevancia contextual.
+        let scoreTotal = 0;
+        if (scoreLexico > 0) {
+          scoreTotal = (scoreLexico * 2.5) + scoreSemantico;
+        } else if (scoreSemantico >= 0.46) {
+          scoreTotal = scoreSemantico;
+        }
+
+        return { producto, scoreTotal, scoreLexico, scoreSemantico };
+      })
+      .filter(item => item.producto.disponible && item.scoreTotal > 0);
+
+    // Ordenar de mayor a menor relevancia
+    candidatos.sort((a, b) => b.scoreTotal - a.scoreTotal);
+
+    const productos = candidatos.slice(0, 8).map(item => item.producto);
 
     if (productos.length === 0) {
-      // Fallback a Nivel 1 si la semántica no encontró nada relevante
-      const exactos = docsData
-        .map(d => mapProducto(d.data, d.id))
-        .filter(p => p.disponible)
-        .filter(p =>
-          p.nombre.toLowerCase().includes(terminoLimpio.toLowerCase()) ||
-          (p.descripcion && p.descripcion.toLowerCase().includes(terminoLimpio.toLowerCase())) ||
-          (p.categoria && p.categoria.toLowerCase().includes(terminoLimpio.toLowerCase()))
-        )
-        .slice(0, 8);
+      const exactos = await busquedaExacta(terminoLimpio);
       return { productos: exactos, nivel: 1, latencyMs: Date.now() - inicio };
     }
 
     return { productos, nivel: 2, latencyMs: Date.now() - inicio };
   } catch (err) {
-    console.error('[RAG] Nivel 2 falló, haciendo fallback a Nivel 1:', err);
+    console.error('[RAG] Búsqueda híbrida falló, haciendo fallback a Nivel 1:', err);
     const productos = await busquedaExacta(terminoLimpio);
     return { productos, nivel: 1, latencyMs: Date.now() - inicio };
   }

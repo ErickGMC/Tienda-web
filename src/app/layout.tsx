@@ -4,7 +4,6 @@ import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import { getComunidadConfig } from "@/lib/actions";
 import { AvisoGlobal } from "@/components/ui/ComunidadSection";
-import AnalyticsTracker from "@/components/ui/AnalyticsTracker";
 import Footer from "@/components/ui/Footer";
 import WhatsAppFAB from "@/components/ui/WhatsAppFAB";
 import Toast from "@/components/ui/Toast";
@@ -98,7 +97,6 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
-        <AnalyticsTracker />
         <AvisoGlobal comunidad={comunidad} />
         <Navbar />
         <main className="flex-1 w-full relative">

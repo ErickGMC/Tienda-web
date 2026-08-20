@@ -148,8 +148,17 @@ export async function POST(request: Request) {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const embeddingModel = genAI.getGenerativeModel({ model: modelo });
-    const result = await embeddingModel.embedContent(textoRAG);
-    const embeddingValues = result.embedding.values.slice(0, 768);
+    let embeddingValues: number[] = [];
+    try {
+      const result = await embeddingModel.embedContent({
+        content: { role: 'user', parts: [{ text: textoRAG }] },
+        outputDimensionality: 768
+      } as any);
+      embeddingValues = result.embedding.values.slice(0, 768);
+    } catch {
+      const fallback = await embeddingModel.embedContent(textoRAG);
+      embeddingValues = fallback.embedding.values.slice(0, 768);
+    }
 
     // 4. Guardar en Firestore con Admin SDK
     const adminDb = getAdminDb();

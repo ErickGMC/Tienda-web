@@ -70,10 +70,18 @@ function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Pro
       try {
         etiquetasArr = JSON.parse(data.etiquetas);
       } catch (e) {
-        etiquetasArr = (data.etiquetas as string).split(',').map((s: string) => s.trim());
+        etiquetasArr = (data.etiquetas as string).split(',').map((s: string) => s.trim()).filter(Boolean);
       }
     }
   }
+
+  // Normalizar disponible/destacado: true para cualquier valor truthy
+  // (true, 1, "1", "true") y false solo para falsy explícito (false, 0, "0", "false", null, undefined).
+  const parseBool = (val: unknown, defaultVal: boolean): boolean => {
+    if (val === true || val === 1 || val === '1' || val === 'true') return true;
+    if (val === false || val === 0 || val === '0' || val === 'false') return false;
+    return defaultVal;
+  };
 
   return {
     id: doc.id,
@@ -84,8 +92,8 @@ function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Pro
     precio: Number(data.precio) || 0,
     unidadMedida: data.unidadMedida || 'unidad',
     imagenUrl: data.imagenUrl || data.imageUrl || '',
-    disponible: data.disponible === true || data.disponible === 1 || data.disponible === '1',
-    destacado: data.destacado === true || data.destacado === 1 || data.destacado === '1',
+    disponible: parseBool(data.disponible, true),
+    destacado: parseBool(data.destacado, false),
     etiquetas: etiquetasArr
   };
 }
@@ -112,9 +120,19 @@ export const getProductosActivos = unstable_cache(
       const snapshot = await getDocs(collection(db, 'productos'));
       if (snapshot.empty) return [];
       
-      return snapshot.docs
-        .map(mapFirestoreProduct)
-        .filter(p => p.disponible);
+      const productos: Producto[] = [];
+      for (const docSnap of snapshot.docs) {
+        try {
+          const producto = mapFirestoreProduct(docSnap);
+          if (producto.disponible) {
+            productos.push(producto);
+          }
+        } catch (docErr) {
+          // Un documento malformado no debe romper el catálogo completo
+          console.warn(`[getProductosActivos] Error mapeando producto ${docSnap.id}:`, docErr);
+        }
+      }
+      return productos;
     } catch (error) {
       console.error("Error fetching productos from Firebase:", error);
       return [];
@@ -237,16 +255,3 @@ export const getComunidadConfig = unstable_cache(
   ['web-config-comunidad'],
   { revalidate: REVALIDATE_TIME, tags: ['web_config'] }
 );
-
-// Registrar evento de Analytics (no realiza escrituras pagadas en Firestore por cada clic)
-export async function logAnalyticsEvent(type: 'pageview' | 'whatsapp_click', details: Record<string, unknown> = {}) {
-  try {
-    if (process.env.NODE_ENV !== 'production') {
-      console.debug(`[Analytics Event] (${type}):`, details);
-    }
-    return true;
-  } catch (error) {
-    console.error("Error logging analytics event:", error);
-    return false;
-  }
-}

@@ -93,47 +93,52 @@ export async function POST(request: Request) {
     }
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    const primaryModelName = process.env.GEMINI_GENERATIVE_MODEL || 'gemini-3.1-flash-lite';
-    const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-3.5-flash-lite';
+    const primaryModelName = process.env.GEMINI_GENERATIVE_MODEL || 'gemini-2.5-flash';
+    const fallbackModelName = process.env.GEMINI_FALLBACK_GENERATIVE_MODEL || 'gemini-2.0-flash';
 
     const prompt = `
 ROL Y PERSONAJE:
-Eres un comerciante y chef experto nacido y criado en Lima, Perú. Conoces al detalle la cultura, costumbres, gastronomía criolla, modismos culinarios y hábitos de consumo del limeño de a pie.
+Eres el casero de confianza y comerciante experto de Minimarket Flor, una bodega peruana de barrio. Conoces al detalle las costumbres de las familias peruanas, la gastronomía criolla, los desayunos de domingo, los lonches, las loncheras de colegio, las reuniones familiares y los hábitos de compra del vecino de a pie.
 
 OBJETIVO GENERAL:
-Armar combos de compra 100% coherentes con las costumbres, cultura y tradición de Lima, Perú, respondiendo a CUALQUIER solicitud del cliente (recetas, almuerzos, desayunos, fiestas, loncheras escolares, limpieza de casa, ferretería, etc.).
+Armar combos de compra 100% coherentes con las costumbres, cultura y tradición del Perú, respondiendo a la solicitud del cliente (recetas criollas, almuerzos, desayunos, fiestas, loncheras escolares, piqueos, limpieza de casa, etc.).
 
 SOLICITUD DEL CLIENTE:
 "${solicitud}"
 
-CATÁLOGO DISPONIBLE (solo usar estos productos):
+CATÁLOGO DISPONIBLE EN MINIMARKET FLOR (Usa EXCLUSIVAMENTE estos productos con sus IDs exactos):
 ${catalogoContexto}
 
-MARCO DE IDENTIDAD CULTURAL Y COSTUMBRES LIMEÑAS (Aplica a CUALQUIER consulta de forma universal):
-
-1. GASTRONOMÍA Y RECETAS LIMEÑAS CRIOLLAS:
-   - Respetar la autenticidad estricta de la sazón criolla de Lima:
-     * Los tuco y aderezos limeños tradicionales (Tallarines Rojos, Estofados, Secos) llevan infaltablemente "Laurel y Hongo" si está disponible en el catálogo.
-     * NUNCA distorsionar las recetas criollas agregando insumos ajenos a la costumbre limeña (ej: En Lima los Tallarines Rojos JAMÁS llevan huevo duro; el Estofado NO lleva fideos ni zapallo; el Locro NO lleva tomate; la Huancaína NO lleva fideos).
-     * Los guisos de almuerzo limeños (Estofado, Locro, Seco) se acompañan siempre con su Arroz Blanco de guarnición.
-
-2. FIESTAS, EVENTOS Y LONCHERAS LIMEÑAS:
-   - Cumpleaños / Fiestas infantiles: Involucran gaseosa (Inca Kola / Coca-Cola), galletas (Casino), jugos, yogurt o frutas (Plátano/Pera). NUNCA licores ni químicos de limpieza.
-   - Lonchecito / Desayuno Limeño: Pan, queso fresco, huevo, leche/café, fruta.
-
-3. HOGAR Y MULTISECTORIAL:
-   - Limpieza y desinfección de casa: Usa lejía y detergente. NUNCA mezcles con alimentos no empacados ni sugieras lejía para aseo corporal.
-
-4. REGLA DE DESCRIPCIÓN EXPLICITA:
-   - MENCIONA Y JUSTIFICA en la "descripcion" (2-3 oraciones) CADA UNO de los productos incluidos en la lista "productos".
-5. Presupuesto: Si el cliente menciona un presupuesto máximo, respétalo estrictamente.
+MARCO DE IDENTIDAD CULTURAL Y COSTUMBRES PERUANAS:
+1. GASTRONOMÍA Y RECETAS CRIOLLAS:
+   - Respetar la autenticidad de la sazón criolla:
+     * Los tuco y aderezos tradicionales (Tallarines Rojos, Estofados, Secos) llevan infaltablemente "Laurel y Hongo", cebolla, tomate y sal.
+     * Los guisos de almuerzo (Estofado, Guiso de pollo, Seco) se acompañan con su Arroz Blanco (Faraón) o Papa Blanca de guarnición.
+     * NUNCA distorsionar recetas criollas agregando insumos extraños.
+2. DESAYUNO DE BARRIO / DOMINGO:
+   - Pan francés, queso fresco, huevos de gallina, leche Gloria, plátano de seda / fruta.
+3. LONCHE TRADICIONAL / ANTOJO DE TARDE:
+   - Pan francés, queso, galletas (Casino, Morochas), yogurt Gloria, chocolate Sublime, leche.
+4. FIESTAS / PIQUEOS / REUNIONES / NOCHE DE PELÍCULAS:
+   - Gaseosa (Inca Kola, KR), galletas rellenas Casino, chocolate Sublime, Lentejas Nestlé.
+5. DEPORTE / CALOR / REHIDRATACIÓN:
+   - Sporade, Agua de Mesa Cielo, Bio Bebida de Aloe.
+6. LIMPIEZA DEL HOGAR:
+   - Clorox Lejía.
+7. REGLAS ESTRICTAS DE CANTIDADES Y UNIDADES:
+   - 'cantidad' representa el número de unidades/paquetes a comprar (número entero entre 1 y 8).
+   - NUNCA uses cantidades en gramos como 250 o 500. Si el producto cuesta S/ 18, cantidad: 1 significa 1 porción/paquete.
+8. PRESUPUESTO:
+   - Si el cliente menciona un presupuesto máximo (ej. S/ 20 o S/ 30), el costo total calculado sumando (precio * cantidad) DEBE ser igual o menor al presupuesto.
+9. DESCRIPCIÓN CERCANA Y CRIOLLA:
+   - Escribe una explicación cálida, de "casero de confianza" (2-3 oraciones), mencionando cómo disfrutar o combinar los productos elegidos.
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
 {
-  "titulo": "Nombre corto del combo (máx 5 palabras)",
-  "descripcion": "Descripción detallada que MENCIONE TODOS Y CADA UNO de los productos incluidos en la lista (2-3 oraciones).",
+  "titulo": "Título atractivo y criollo (máx 5 palabras)",
+  "descripcion": "Descripción cálida y explicativa de los productos y su uso (2-3 oraciones).",
   "productos": [
-    { "id": "ID_DEL_PRODUCTO", "cantidad": 1 }
+    { "id": "ID_EXACTO_DEL_CATALOGO", "nombre": "Nombre del producto", "cantidad": 1 }
   ]
 }
 `;
@@ -152,7 +157,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
 
     // 5. Parsear respuesta JSON del LLM (con limpieza de markdown blocks)
     const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    let llmResponse: { titulo: string; descripcion: string; productos: { id: string; cantidad: number }[] };
+    let llmResponse: { titulo: string; descripcion: string; productos: { id: string; nombre?: string; cantidad: number }[] };
 
     try {
       llmResponse = JSON.parse(jsonStr);
@@ -161,20 +166,40 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
       return NextResponse.json({ error: 'Error al procesar la respuesta de la IA' }, { status: 500 });
     }
 
-    // 6. Mapear productos del LLM con datos reales de Firestore
-    const productosMap = new Map(productosRelevantes.map(p => [p.id, p]));
+    // 6. Mapear productos del LLM con datos reales de Firestore (Lookup ultra-resiliente por ID o Nombre)
+    const productosById = new Map(productosRelevantes.map(p => [p.id, p]));
+    const productosByName = new Map(productosRelevantes.map(p => [p.nombre.toLowerCase().trim(), p]));
 
     const productosCombo: ProductoCombo[] = llmResponse.productos
       .map((item): ProductoCombo | null => {
-        const prod = productosMap.get(item.id);
+        let prod = productosById.get(item.id);
+        
+        // Fallback por nombre si el LLM tuvo un error en un caracter del ID
+        if (!prod && item.nombre) {
+          prod = productosByName.get(item.nombre.toLowerCase().trim());
+        }
+        if (!prod && item.nombre) {
+          // Búsqueda por inclusión de substring
+          const itemNombreNorm = item.nombre.toLowerCase();
+          prod = productosRelevantes.find(p => 
+            p.nombre.toLowerCase().includes(itemNombreNorm) || 
+            itemNombreNorm.includes(p.nombre.toLowerCase())
+          );
+        }
+
         if (!prod) return null;
+
+        // Normalizar cantidad a rango seguro (mín 1, máx 10 unidades para evitar errores de gramos)
+        let cantidad = Number(item.cantidad) || 1;
+        if (cantidad > 10) cantidad = 1;
+        if (cantidad < 1) cantidad = 1;
 
         return {
           id: prod.id,
           nombre: prod.nombre,
           precio: prod.precio,
-          cantidad: item.cantidad,
-          subtotal: prod.precio * item.cantidad,
+          cantidad,
+          subtotal: prod.precio * cantidad,
           imagenUrl: prod.imagenUrl,
         };
       })
@@ -183,8 +208,8 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
     const totalEstimado = productosCombo.reduce((acc, p) => acc + p.subtotal, 0);
 
     const response: ComboResponse = {
-      titulo: llmResponse.titulo,
-      descripcion: llmResponse.descripcion,
+      titulo: llmResponse.titulo || 'Combo Personalizado',
+      descripcion: llmResponse.descripcion || 'Productos seleccionados según tu solicitud.',
       productos: productosCombo,
       totalEstimado,
     };

@@ -25,11 +25,13 @@ interface IAComboModalProps {
 }
 
 const SUGERENCIAS = [
-  'Lonchera escolar para 3 días',
-  'Desayuno para 4 personas',
-  'Ingredientes básicos para la semana',
-  'Kit de snacks para una tarde de películas',
-  'Bebidas para una reunión familiar',
+  '🍳 Desayuno criollo para 4 personas con S/ 20',
+  '🍲 Ingredientes para almuerzo casero criollo',
+  '🎒 Lonchera escolar económica y nutritiva',
+  '☕ Lonchecito de la tarde con galletas y yogurt',
+  '🍿 Piqueos y gaseosas para ver el partido',
+  '⚡ Pack de hidratación y refresco (Sporade, Agua, Aloe)',
+  '🧹 Kit de limpieza del hogar',
 ];
 
 export default function IAComboModal({ isOpen, onClose }: IAComboModalProps) {
