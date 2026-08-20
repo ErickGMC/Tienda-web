@@ -65,9 +65,47 @@ function parsearEtiquetas(raw: unknown): string[] {
 }
 
 /**
+ * Infiere conceptos clave y necesidades a partir del nombre y categoría del producto.
+ */
+function inferirConceptosSemanticos(nombre: string, categoria: string, desc: string): string[] {
+  const texto = `${nombre} ${categoria} ${desc}`.toLowerCase();
+  const conceptos: string[] = [];
+
+  // Proteína
+  if (texto.includes('pollo') || texto.includes('carne') || texto.includes('huevo') || texto.includes('queso') || texto.includes('pescado') || texto.includes('atun') || texto.includes('patasca') || texto.includes('carnero')) {
+    conceptos.push('proteina', 'alimento proteico', 'desarrollo muscular', 'fuerza');
+  }
+  // Hidratación
+  if (texto.includes('agua') || texto.includes('sporade') || texto.includes('gatorade') || texto.includes('rehidratante') || texto.includes('cielo') || texto.includes('mineral') || texto.includes('isotonica') || texto.includes('electrolito')) {
+    conceptos.push('hidratacion', 'rehidratacion', 'calmar la sed', 'electrolitos', 'deporte');
+  }
+  // Desayuno
+  if (texto.includes('pan') || texto.includes('leche') || texto.includes('huevo') || texto.includes('queso') || texto.includes('avena') || texto.includes('yogurt') || texto.includes('platano')) {
+    conceptos.push('desayuno', 'primera comida del dia', 'manana');
+  }
+  // Almuerzo
+  if (texto.includes('arroz') || texto.includes('fideo') || texto.includes('tallarin') || texto.includes('pollo') || texto.includes('menu') || texto.includes('aderezo') || texto.includes('papa') || texto.includes('lenteja')) {
+    conceptos.push('almuerzo', 'segundo', 'comida criolla', 'guiso');
+  }
+  // Limpieza
+  if (texto.includes('lejia') || texto.includes('clorox') || texto.includes('desinfectante') || texto.includes('limpieza') || texto.includes('cloro') || texto.includes('aseo')) {
+    conceptos.push('limpieza', 'desinfeccion', 'aseo del hogar', 'higiene');
+  }
+  // Antojo / Dulce
+  if (texto.includes('chocolate') || texto.includes('sublime') || texto.includes('galleta') || texto.includes('casino') || texto.includes('morocha') || texto.includes('lentejas') || texto.includes('dulce')) {
+    conceptos.push('antojo dulce', 'snack', 'golosina', 'piqueo');
+  }
+  // Carbohidratos / Energía
+  if (texto.includes('arroz') || texto.includes('fideo') || texto.includes('papa') || texto.includes('pan') || texto.includes('harina') || texto.includes('avena')) {
+    conceptos.push('carbohidratos', 'energia');
+  }
+
+  return conceptos;
+}
+
+/**
  * Construye el texto enriquecido para generar el embedding.
- * IMPORTANTE: Este formato debe ser idéntico al usado en el
- * script generate_embeddings.cjs para consistencia semántica.
+ * IMPORTANTE: Formato estructurado y enriquecido ontológicamente para máxima precisión semántica.
  */
 function construirTextoRAG(p: {
   nombre: string;
@@ -90,6 +128,11 @@ function construirTextoRAG(p: {
   const etiquetas = parsearEtiquetas(p.etiquetas);
   if (etiquetas.length > 0) {
     partes.push(`Etiquetas: ${etiquetas.join(', ')}`);
+  }
+
+  const conceptos = inferirConceptosSemanticos(p.nombre, p.categoria || '', p.descripcion || '');
+  if (conceptos.length > 0) {
+    partes.push(`Necesidades y Conceptos: ${conceptos.join(', ')}`);
   }
 
   if (p.unidadMedida && p.unidadMedida !== 'unidad') {

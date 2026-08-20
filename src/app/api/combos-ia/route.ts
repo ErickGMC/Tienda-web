@@ -1,6 +1,6 @@
 /**
  * API Route: /api/combos-ia
- * Nivel 3 del sistema RAG — Armador de Combos / Recetas con Gemini 3.1 Flash Lite (y respaldo a 3.5 Flash Lite).
+ * Nivel 3 del sistema RAG — Armador de Combos / Recetas con Gemini con ordenamiento estricto por relevancia.
  *
  * POST /api/combos-ia
  * Body: { solicitud: string }
@@ -10,7 +10,7 @@
  * {
  *   titulo: string,               // "Lonchera Escolar 3 Días"
  *   descripcion: string,          // Texto de contexto de la IA
- *   productos: ProductoCombo[],   // Lista de productos con cantidad y subtotal
+ *   productos: ProductoCombo[],   // Lista de productos ordenados con prioridad a los más directamente relacionados
  *   totalEstimado: number,        // Suma de precios
  *   disponible: boolean           // Si todos están en stock
  * }
@@ -20,8 +20,16 @@
 
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getIAConfig, generarEmbedding, busquedaSemantica } from '@/lib/rag/ragService';
+import { 
+  getIAConfig, 
+  generarEmbedding, 
+  busquedaSemantica, 
+  busquedaExacta,
+  evaluarTierOntologico, 
+  normalizarTexto 
+} from '@/lib/rag/ragService';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimiter';
+import { Producto } from '@/types/producto';
 
 export interface ProductoCombo {
   id: string;
@@ -30,6 +38,7 @@ export interface ProductoCombo {
   cantidad: number;
   subtotal: number;
   imagenUrl?: string;
+  tier?: number;
 }
 
 export interface ComboResponse {
@@ -64,9 +73,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Solicitud inválida (debe tener entre 5 y 300 caracteres)' }, { status: 400 });
     }
 
-    // 2. Generar embedding de la solicitud y recuperar candidatos del catálogo (pool ampliado a 35)
-    const embedding = await generarEmbedding(solicitud);
-    const productosRelevantes = await busquedaSemantica(embedding, 35);
+    const solicitudLimpia = solicitud.trim();
+    const queryNorm = normalizarTexto(solicitudLimpia);
+    const tokens = queryNorm.split(/\s+/);
+
+    // 2. Recuperación híbrida de candidatos (vectorial semántica + ontológica léxica)
+    const [embedding, exactos] = await Promise.all([
+      generarEmbedding(solicitudLimpia),
+      busquedaExacta(solicitudLimpia, 20),
+    ]);
+
+    const semanticos = await busquedaSemantica(embedding, 35, solicitudLimpia);
+
+    // Unificar y desduplicar candidatos
+    const mapaCandidatos = new Map<string, Producto>();
+    for (const p of exactos) mapaCandidatos.set(p.id, p);
+    for (const p of semanticos) mapaCandidatos.set(p.id, p);
+
+    const productosRelevantes = Array.from(mapaCandidatos.values());
 
     if (productosRelevantes.length === 0) {
       return NextResponse.json({
@@ -101,37 +125,36 @@ ROL Y PERSONAJE:
 Eres el casero de confianza y comerciante experto de Minimarket Flor, una bodega peruana de barrio. Conoces al detalle las costumbres de las familias peruanas, la gastronomía criolla, los desayunos de domingo, los lonches, las loncheras de colegio, las reuniones familiares y los hábitos de compra del vecino de a pie.
 
 OBJETIVO GENERAL:
-Armar combos de compra 100% coherentes con las costumbres, cultura y tradición del Perú, respondiendo a la solicitud del cliente (recetas criollas, almuerzos, desayunos, fiestas, loncheras escolares, piqueos, limpieza de casa, etc.).
+Armar combos de compra 100% coherentes con las costumbres, cultura y tradición del Perú, respondiendo con la máxima precisión y jerarquía a la solicitud del cliente.
 
 SOLICITUD DEL CLIENTE:
-"${solicitud}"
+"${solicitudLimpia}"
 
 CATÁLOGO DISPONIBLE EN MINIMARKET FLOR (Usa EXCLUSIVAMENTE estos productos con sus IDs exactos):
 ${catalogoContexto}
 
-MARCO DE IDENTIDAD CULTURAL Y COSTUMBRES PERUANAS:
-1. GASTRONOMÍA Y RECETAS CRIOLLAS:
-   - Respetar la autenticidad de la sazón criolla:
-     * Los tuco y aderezos tradicionales (Tallarines Rojos, Estofados, Secos) llevan infaltablemente "Laurel y Hongo", cebolla, tomate y sal.
-     * Los guisos de almuerzo (Estofado, Guiso de pollo, Seco) se acompañan con su Arroz Blanco (Faraón) o Papa Blanca de guarnición.
-     * NUNCA distorsionar recetas criollas agregando insumos extraños.
-2. DESAYUNO DE BARRIO / DOMINGO:
-   - Pan francés, queso fresco, huevos de gallina, leche Gloria, plátano de seda / fruta.
-3. LONCHE TRADICIONAL / ANTOJO DE TARDE:
-   - Pan francés, queso, galletas (Casino, Morochas), yogurt Gloria, chocolate Sublime, leche.
-4. FIESTAS / PIQUEOS / REUNIONES / NOCHE DE PELÍCULAS:
-   - Gaseosa (Inca Kola, KR), galletas rellenas Casino, chocolate Sublime, Lentejas Nestlé.
-5. DEPORTE / CALOR / REHIDRATACIÓN:
-   - Sporade, Agua de Mesa Cielo, Bio Bebida de Aloe.
-6. LIMPIEZA DEL HOGAR:
-   - Clorox Lejía.
-7. REGLAS ESTRICTAS DE CANTIDADES Y UNIDADES:
-   - 'cantidad' representa el número de unidades/paquetes a comprar (número entero entre 1 y 8).
-   - NUNCA uses cantidades en gramos como 250 o 500. Si el producto cuesta S/ 18, cantidad: 1 significa 1 porción/paquete.
-8. PRESUPUESTO:
-   - Si el cliente menciona un presupuesto máximo (ej. S/ 20 o S/ 30), el costo total calculado sumando (precio * cantidad) DEBE ser igual o menor al presupuesto.
-9. DESCRIPCIÓN CERCANA Y CRIOLLA:
-   - Escribe una explicación cálida, de "casero de confianza" (2-3 oraciones), mencionando cómo disfrutar o combinar los productos elegidos.
+REGLAS DE ORO Y PRIORIZACIÓN ESTRICTA:
+1. ORDENAMIENTO OBLIGATORIO DE PRODUCTOS:
+   - Coloca OBLIGATORIAMENTE en las PRIMERAS posiciones del array "productos" aquellos que satisfacen de forma DIRECTA, PRINCIPAL e INMEDIATA la consulta del cliente:
+     * Si pide "hidratación" o "deporte" -> Bebidas isotónicas/rehidratantes (Sporade, Gatorade) y Agua de Mesa DEBEN ser los PRIMEROS.
+     * Si pide "proteína" o "desarrollo muscular" -> Carnes, Pollo, Huevos de gallina y Queso DEBEN ser los PRIMEROS.
+     * Si pide "desayuno" -> Pan francés, Huevos, Queso fresco, Leche Gloria y Plátano DEBEN ser los PRIMEROS.
+     * Si pide "almuerzo criollo" / "receta" -> El plato principal (Pollo, Arroz Blanco, Fideos, Aderezo Laurel y Hongo) DEBE ir PRIMERO.
+     * Si pide "antojo" o "dulce" -> Chocolates (Sublime), Galletas (Casino, Morochas) y Lentejitas DEBEN ser los PRIMEROS.
+     * Si pide "limpieza" -> Lejía Clorox y desinfectantes DEBEN ser los PRIMEROS.
+   - Los productos de guarnición, complementos menores o aderezos secundarios deben colocarse estrictamente DESPUÉS de los productos principales.
+
+2. GASTRONOMÍA Y RECETAS CRIOLLAS:
+   - Respetar la autenticidad criolla: Tallarines Rojos/Guisos llevan "Laurel y Hongo", cebolla, tomate, sal. Arroz Blanco Faraón o Papa Blanca de guarnición.
+
+3. CANTIDADES Y UNIDADES:
+   - 'cantidad' representa el número de unidades/paquetes (entero entre 1 y 8). NUNCA uses gramos como 250 o 500.
+
+4. PRESUPUESTO:
+   - Si el cliente menciona un presupuesto máximo (ej. S/ 20 o S/ 30), el total calculado sumando (precio * cantidad) DEBE ser menor o igual al monto indicado.
+
+5. DESCRIPCIÓN CERCANA Y CRIOLLA:
+   - Escribe una explicación cálida (2-3 oraciones), explicando por qué estos productos son ideales para su necesidad y cómo combinarlos.
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques de código markdown ni texto adicional):
 {
@@ -171,7 +194,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
     const productosByName = new Map(productosRelevantes.map(p => [p.nombre.toLowerCase().trim(), p]));
 
     const productosCombo: ProductoCombo[] = llmResponse.productos
-      .map((item): ProductoCombo | null => {
+      .map((item, originalIndex): ProductoCombo | null => {
         let prod = productosById.get(item.id);
         
         // Fallback por nombre si el LLM tuvo un error en un caracter del ID
@@ -179,7 +202,6 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
           prod = productosByName.get(item.nombre.toLowerCase().trim());
         }
         if (!prod && item.nombre) {
-          // Búsqueda por inclusión de substring
           const itemNombreNorm = item.nombre.toLowerCase();
           prod = productosRelevantes.find(p => 
             p.nombre.toLowerCase().includes(itemNombreNorm) || 
@@ -189,10 +211,13 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
 
         if (!prod) return null;
 
-        // Normalizar cantidad a rango seguro (mín 1, máx 10 unidades para evitar errores de gramos)
+        // Normalizar cantidad a rango seguro
         let cantidad = Number(item.cantidad) || 1;
         if (cantidad > 10) cantidad = 1;
         if (cantidad < 1) cantidad = 1;
+
+        // Evaluar tier ontológico respecto a la solicitud
+        const evalOnto = evaluarTierOntologico(prod, queryNorm, tokens);
 
         return {
           id: prod.id,
@@ -201,9 +226,17 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
           cantidad,
           subtotal: prod.precio * cantidad,
           imagenUrl: prod.imagenUrl,
+          tier: evalOnto.tier > 0 ? evalOnto.tier : (originalIndex + 10)
         };
       })
       .filter((p): p is ProductoCombo => p !== null);
+
+    // 7. Reordenamiento garantizado: Tier 1 primero -> Tier 2 -> Complementos
+    productosCombo.sort((a, b) => {
+      const tierA = a.tier ?? 99;
+      const tierB = b.tier ?? 99;
+      return tierA - tierB;
+    });
 
     const totalEstimado = productosCombo.reduce((acc, p) => acc + p.subtotal, 0);
 
