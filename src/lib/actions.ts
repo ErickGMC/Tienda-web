@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, DocumentSnapshot, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from './firebase/config';
-import { Producto } from '@/types/producto';
+import { Producto, PresentacionVariante } from '@/types/producto';
 
 // Revalidar cada 30 segundos para actualización rápida de banners y catálogo
 const REVALIDATE_TIME = 30;
@@ -138,53 +138,94 @@ export const getProductosActivos = unstable_cache(
         }
       }
 
-      // Mapa de variantes agrupadas por productoPadreId
+      // 1. Identificar productos padres (explícitos por esPrincipalWeb o por tener variantes vinculadas)
+      const padresExplicitMap = new Map<string, Producto>();
       const variantesPorPadre = new Map<string, Producto[]>();
+      const idsHijosAsignados = new Set<string>();
+
+      // Agrupación explícita por productoPadreId
       for (const prod of todosLosProductos) {
-        if (prod.productoPadreId) {
+        if (prod.esPrincipalWeb) {
+          padresExplicitMap.set(prod.id, prod);
+        }
+        if (prod.productoPadreId && prod.productoPadreId.trim() !== '') {
           const lista = variantesPorPadre.get(prod.productoPadreId) || [];
           lista.push(prod);
           variantesPorPadre.set(prod.productoPadreId, lista);
+          idsHijosAsignados.add(prod.id);
+        }
+      }
+
+      // 2. Agrupación inteligente automática para productos principales por coincidencia de nombre/marca
+      // Si un producto está marcado como esPrincipalWeb (ej: "Inca Kola" o "Sporade"),
+      // agrupa automáticamente los productos de la misma categoría cuyo nombre empiece con ese nombre.
+      for (const prod of todosLosProductos) {
+        if (prod.esPrincipalWeb || padresExplicitMap.has(prod.id)) {
+          const nombrePadre = prod.nombre.trim().toLowerCase();
+          for (const candidato of todosLosProductos) {
+            if (candidato.id === prod.id || idsHijosAsignados.has(candidato.id)) continue;
+            
+            const nombreCand = candidato.nombre.trim().toLowerCase();
+            // Si comparten categoría y el nombre del candidato empieza con el nombre del padre
+            if (candidato.categoria === prod.categoria && (nombreCand.startsWith(nombrePadre) || nombreCand.includes(nombrePadre))) {
+              const lista = variantesPorPadre.get(prod.id) || [];
+              lista.push(candidato);
+              variantesPorPadre.set(prod.id, lista);
+              idsHijosAsignados.add(candidato.id);
+            }
+          }
         }
       }
 
       const catalogoFinal: Producto[] = [];
 
       for (const prod of todosLosProductos) {
-        // Si es una variante secundaria vinculada a un padre, NO se muestra como tarjeta individual
-        if (prod.productoPadreId && variantesPorPadre.has(prod.productoPadreId)) {
+        // Si este ítem fue agrupado como variante de otro padre, omitir tarjeta independiente
+        if (idsHijosAsignados.has(prod.id)) {
           continue;
         }
 
         const variantesHijas = variantesPorPadre.get(prod.id) || [];
 
         if (variantesHijas.length > 0) {
-          // Es un Producto Principal / Familia Web con variantes
-          const todasLasPresentaciones = [
-            // Si el padre tiene su propio nombre de variante o precio base
-            ...(prod.etiquetaVariante ? [{
+          // Extraer o limpiar etiqueta de cada variante
+          const extraerEtiqueta = (nombreHijo: string, nombrePadre: string, etiquetaDef?: string) => {
+            if (etiquetaDef && etiquetaDef.trim() !== '') return etiquetaDef.trim();
+            const regex = new RegExp(`^${nombrePadre}\\s*[-–:]?\\s*`, 'i');
+            const limpia = nombreHijo.replace(regex, '').trim();
+            return limpia.length > 0 ? limpia : nombreHijo;
+          };
+
+          const presentaciones: PresentacionVariante[] = [];
+
+          // Si el padre tiene su propio stock/precio y no está duplicado
+          if (prod.etiquetaVariante || (prod.precio > 0 && !variantesHijas.some(v => v.nombre === prod.nombre))) {
+            presentaciones.push({
               id: prod.id,
               codigoBarras: prod.codigoBarras,
               nombre: prod.nombre,
-              etiqueta: prod.etiquetaVariante,
+              etiqueta: prod.etiquetaVariante || 'Presentación Base',
               precio: prod.precio,
               stock: prod.stock ?? 0,
               disponible: prod.disponible,
               unidadMedida: prod.unidadMedida
-            }] : []),
-            ...variantesHijas.map(v => ({
+            });
+          }
+
+          for (const v of variantesHijas) {
+            presentaciones.push({
               id: v.id,
               codigoBarras: v.codigoBarras,
               nombre: v.nombre,
-              etiqueta: v.etiquetaVariante || v.nombre,
+              etiqueta: extraerEtiqueta(v.nombre, prod.nombre, v.etiquetaVariante),
               precio: v.precio,
               stock: v.stock ?? 0,
               disponible: v.disponible,
               unidadMedida: v.unidadMedida
-            }))
-          ];
+            });
+          }
 
-          const precios = todasLasPresentaciones.map(p => p.precio).filter(p => p > 0);
+          const precios = presentaciones.map(p => p.precio).filter(p => p > 0);
           const precioMin = precios.length > 0 ? Math.min(...precios) : prod.precio;
           const precioMax = precios.length > 0 ? Math.max(...precios) : prod.precio;
 
@@ -192,10 +233,10 @@ export const getProductosActivos = unstable_cache(
             ...prod,
             precio: precioMin,
             precioMax: precioMax > precioMin ? precioMax : undefined,
-            presentaciones: todasLasPresentaciones
+            presentaciones
           });
         } else {
-          // Producto individual independiente
+          // Producto individual sin variantes
           catalogoFinal.push(prod);
         }
       }
