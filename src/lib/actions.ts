@@ -94,7 +94,12 @@ function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Pro
     imagenUrl: data.imagenUrl || data.imageUrl || '',
     disponible: parseBool(data.disponible, true),
     destacado: parseBool(data.destacado, false),
-    etiquetas: etiquetasArr
+    stock: data.stock !== undefined && data.stock !== null ? Number(data.stock) : undefined,
+    etiquetas: etiquetasArr,
+    esPrincipalWeb: parseBool(data.esPrincipalWeb, false),
+    productoPadreId: data.productoPadreId || undefined,
+    etiquetaVariante: data.etiquetaVariante || undefined,
+    mostrarPrecioWeb: parseBool(data.mostrarPrecioWeb, false)
   };
 }
 
@@ -113,26 +118,89 @@ function mapFirestoreBanner(doc: DocumentSnapshot | QueryDocumentSnapshot): Bann
   };
 }
 
-// Obtener todos los productos activos
+// Obtener todos los productos activos agrupando familias y variantes para la web
 export const getProductosActivos = unstable_cache(
   async () => {
     try {
       const snapshot = await getDocs(collection(db, 'productos'));
       if (snapshot.empty) return [];
       
-      const productos: Producto[] = [];
+      const todosLosProductos: Producto[] = [];
       for (const docSnap of snapshot.docs) {
         try {
           const producto = mapFirestoreProduct(docSnap);
           if (producto.disponible) {
-            productos.push(producto);
+            todosLosProductos.push(producto);
           }
         } catch (docErr) {
           // Un documento malformado no debe romper el catálogo completo
           console.warn(`[getProductosActivos] Error mapeando producto ${docSnap.id}:`, docErr);
         }
       }
-      return productos;
+
+      // Mapa de variantes agrupadas por productoPadreId
+      const variantesPorPadre = new Map<string, Producto[]>();
+      for (const prod of todosLosProductos) {
+        if (prod.productoPadreId) {
+          const lista = variantesPorPadre.get(prod.productoPadreId) || [];
+          lista.push(prod);
+          variantesPorPadre.set(prod.productoPadreId, lista);
+        }
+      }
+
+      const catalogoFinal: Producto[] = [];
+
+      for (const prod of todosLosProductos) {
+        // Si es una variante secundaria vinculada a un padre, NO se muestra como tarjeta individual
+        if (prod.productoPadreId && variantesPorPadre.has(prod.productoPadreId)) {
+          continue;
+        }
+
+        const variantesHijas = variantesPorPadre.get(prod.id) || [];
+
+        if (variantesHijas.length > 0) {
+          // Es un Producto Principal / Familia Web con variantes
+          const todasLasPresentaciones = [
+            // Si el padre tiene su propio nombre de variante o precio base
+            ...(prod.etiquetaVariante ? [{
+              id: prod.id,
+              codigoBarras: prod.codigoBarras,
+              nombre: prod.nombre,
+              etiqueta: prod.etiquetaVariante,
+              precio: prod.precio,
+              stock: prod.stock ?? 0,
+              disponible: prod.disponible,
+              unidadMedida: prod.unidadMedida
+            }] : []),
+            ...variantesHijas.map(v => ({
+              id: v.id,
+              codigoBarras: v.codigoBarras,
+              nombre: v.nombre,
+              etiqueta: v.etiquetaVariante || v.nombre,
+              precio: v.precio,
+              stock: v.stock ?? 0,
+              disponible: v.disponible,
+              unidadMedida: v.unidadMedida
+            }))
+          ];
+
+          const precios = todasLasPresentaciones.map(p => p.precio).filter(p => p > 0);
+          const precioMin = precios.length > 0 ? Math.min(...precios) : prod.precio;
+          const precioMax = precios.length > 0 ? Math.max(...precios) : prod.precio;
+
+          catalogoFinal.push({
+            ...prod,
+            precio: precioMin,
+            precioMax: precioMax > precioMin ? precioMax : undefined,
+            presentaciones: todasLasPresentaciones
+          });
+        } else {
+          // Producto individual independiente
+          catalogoFinal.push(prod);
+        }
+      }
+
+      return catalogoFinal;
     } catch (error) {
       console.error("Error fetching productos from Firebase:", error);
       return [];

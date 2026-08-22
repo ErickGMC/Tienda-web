@@ -12,6 +12,17 @@ export type CategoriaProducto =
   | 'Ocasión y Otros'
   | 'Otros';
 
+export interface PresentacionVariante {
+  id: string;
+  codigoBarras?: string;
+  nombre: string;
+  etiqueta: string; // Ej: "295ml Vidrio", "500ml Pet", "3L Familiar"
+  precio: number;
+  stock: number;
+  disponible: boolean;
+  unidadMedida?: string;
+}
+
 export interface Producto {
   id: string; // ID autogenerado por Firestore
   codigoBarras?: string;
@@ -19,6 +30,7 @@ export interface Producto {
   descripcion: string; // Importante para la integración con IA
   categoria: CategoriaProducto;
   precio: number;
+  precioMax?: number; // Si hay múltiples variantes con distintos precios
   unidadMedida: 'unidad' | 'kg' | 'litro' | 'servicio' | 'variable';
   imagenUrl?: string;
   disponible: boolean;
@@ -26,7 +38,14 @@ export interface Producto {
   etiquetas?: string[]; // Ej: ["desayuno", "rapido", "caliente"]
   stock?: number;
 
-  // ── Campos RAG / Búsqueda Semántica ──────────────────────────────────────
+  // ── Catálogo Web y Familias de Productos ──
+  esPrincipalWeb?: boolean;
+  productoPadreId?: string;
+  etiquetaVariante?: string;
+  mostrarPrecioWeb?: boolean; // Control individual: false para ocultar precio en la web
+  presentaciones?: PresentacionVariante[]; // Variantes agrupadas bajo esta familia
+
+  // ── Campos RAG / Búsqueda Semántica ──
   /** Representación textual enriquecida para generar el vector de embedding.
    *  Construida automáticamente al guardar/editar el producto desde el POS.
    *  Ej: "Producto: Leche Gloria 1L. Categoría: Abarrotes. Descripción: ..."
@@ -38,4 +57,3 @@ export interface Producto {
    */
   embedding?: number[];
 }
-

@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
   for (const tag of tagsToRevalidate) {
     try {
-      revalidateTag(tag);
+      (revalidateTag as any)(tag);
       revalidated.push(tag);
     } catch (err: any) {
       console.warn(`[revalidate] Error al revalidar tag "${tag}":`, err.message);
