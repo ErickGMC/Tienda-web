@@ -4,10 +4,10 @@ import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Producto, CategoriaProducto } from '@/types/producto';
 import { Banner, WebConfig, EmpresaConfig } from '@/lib/actions';
 import ProductCard from './ProductCard';
-import SearchResultCard from './SearchResultCard';
+import FamilyDetailModal from './FamilyDetailModal';
 import HeroCarousel from '@/components/ui/HeroCarousel';
 import { useTiendaStore } from '@/lib/store';
-import { ChevronLeft, ChevronRight, Sparkles, Clock, X, Search, Package } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Clock, X, Package } from 'lucide-react';
 
 interface TiendaCatalogProps {
   productos: Producto[];
@@ -27,7 +27,6 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
     ragProductos, 
     searchNivel,
     searchLatencyMs,
-    isSearching,
     clearSearch,
     selectedCategory, 
     setSelectedCategory, 
@@ -37,9 +36,23 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
 
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  // Paginación (12 productos por página)
+  // Paginación (12 familias por página)
   const ITEMS_PER_PAGE = 12;
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Estado para el Modal de Presentaciones de Familia
+  const [selectedFamilyForModal, setSelectedFamilyForModal] = useState<Producto | null>(null);
+  const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
+
+  const handleOpenFamily = (prod: Producto) => {
+    setSelectedFamilyForModal(prod);
+    setIsFamilyModalOpen(true);
+  };
+
+  const handleCloseFamilyModal = () => {
+    setIsFamilyModalOpen(false);
+    setSelectedFamilyForModal(null);
+  };
 
   const isSearchActive = Boolean(activeSearchTerm.trim() || searchQuery.trim() || ragProductos);
 
@@ -48,7 +61,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
     setCurrentPage(1);
   }, [selectedCategory, searchQuery, activeSearchTerm, ragProductos]);
 
-  // Drag to scroll logic optimized with useRef
+  // Drag to scroll logic
   const dragState = useRef({ isDragging: false, startX: 0, scrollLeft: 0, hasDragged: false });
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -112,9 +125,8 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
     setConfig(config || {}, empresa || {});
   }, [config, empresa, setShowPrices, setConfig]);
 
-  // Filtrado optimizado con useMemo
-  const productosFiltrados = useMemo(() => {
-    // Si la IA de búsqueda entregó resultados para esta consulta activa, renderizarlos directamente
+  // Filtrado de familias
+  const familiasFiltradas = useMemo(() => {
     if (isSearchActive && ragProductos && ragProductos.length > 0) {
       return ragProductos;
     }
@@ -126,7 +138,8 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
       const matchSearch = !term || (
         p.nombre.toLowerCase().includes(term) || 
         (p.descripcion && p.descripcion.toLowerCase().includes(term)) ||
-        (p.categoria && p.categoria.toLowerCase().includes(term))
+        (p.categoria && p.categoria.toLowerCase().includes(term)) ||
+        (p.presentaciones && p.presentaciones.some(pr => pr.nombre.toLowerCase().includes(term) || (pr.etiqueta && pr.etiqueta.toLowerCase().includes(term))))
       );
       return matchCategoria && matchSearch;
     });
@@ -139,11 +152,11 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
   }, [productos, selectedCategory, searchQuery, activeSearchTerm, ragProductos, isSearchActive]);
 
   // Paginación calculada
-  const totalPages = Math.ceil(productosFiltrados.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(familiasFiltradas.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const productosPaginados = useMemo(() => {
-    return productosFiltrados.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [productosFiltrados, startIndex]);
+  const familiasPaginadas = useMemo(() => {
+    return familiasFiltradas.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [familiasFiltradas, startIndex]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -223,7 +236,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
         }
       `}} />
 
-      {/* ── SECCIÓN DE RESULTADOS DE BÚSQUEDA EN EL CUERPO ── */}
+      {/* ── SECCIÓN DE RESULTADOS DE BÚSQUEDA (TARJETAS DE FAMILIA RELACIONADAS) ── */}
       {isSearchActive ? (
         <div id="productos-grid" className="mb-6 space-y-4">
           <div className="bg-slate-50 dark:bg-slate-900/80 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
@@ -248,7 +261,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
                 )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {productosFiltrados.length} coincidencia{productosFiltrados.length !== 1 ? 's' : ''} encontrada{productosFiltrados.length !== 1 ? 's' : ''} (vista rápida sin imágenes)
+                {familiasFiltradas.length} familia{familiasFiltradas.length !== 1 ? 's' : ''} relacionada{familiasFiltradas.length !== 1 ? 's' : ''} encontrada{familiasFiltradas.length !== 1 ? 's' : ''}. Haz clic en una familia para ver y pedir sus productos.
               </p>
             </div>
 
@@ -262,21 +275,25 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
             </button>
           </div>
 
-          {/* Grid de Resultados SIN IMÁGENES */}
-          {productosFiltrados.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {productosFiltrados.map((producto) => (
-                <SearchResultCard key={producto.id} producto={producto} />
+          {/* Grid de Tarjetas de Familias Resultantes */}
+          {familiasFiltradas.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+              {familiasFiltradas.map((familia) => (
+                <ProductCard 
+                  key={familia.id} 
+                  producto={familia} 
+                  onSelect={handleOpenFamily} 
+                />
               ))}
             </div>
           ) : (
             <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
               <Package className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">
-                No se encontraron resultados
+                No se encontraron familias de productos
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
-                Prueba con otro término de búsqueda o limpia el filtro para ver todo el inventario disponible.
+                Prueba con otro término de búsqueda o limpia el filtro para ver todas las familias disponibles.
               </p>
               <button
                 type="button"
@@ -289,26 +306,30 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
           )}
         </div>
       ) : (
-        /* ── SECCIÓN DE CATÁLOGO GENERAL (CON FOTOS REPRESENTATIVAS Y VARIANTES) ── */
+        /* ── SECCIÓN DE CATÁLOGO GENERAL (TARJETAS DE FAMILIAS EXCLUSIVAS) ── */
         <div id="productos-grid">
           <div className="mb-4 sm:mb-6 flex items-center justify-between pt-0 sm:pt-4">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
-              {selectedCategory === 'Todas' ? 'Productos Destacados' : selectedCategory}
+              {selectedCategory === 'Todas' ? 'Familias de Productos' : selectedCategory}
             </h2>
             <span className="text-sm text-slate-500">
-              {productosFiltrados.length > 0 ? (
-                <>Mostrando <span className="font-semibold text-slate-700 dark:text-slate-300">{startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, productosFiltrados.length)}</span> de {productosFiltrados.length} productos</>
+              {familiasFiltradas.length > 0 ? (
+                <>Mostrando <span className="font-semibold text-slate-700 dark:text-slate-300">{startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, familiasFiltradas.length)}</span> de {familiasFiltradas.length} familias</>
               ) : (
-                '0 productos'
+                '0 familias'
               )}
             </span>
           </div>
 
-          {productosPaginados.length > 0 ? (
+          {familiasPaginadas.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-                {productosPaginados.map((producto) => (
-                  <ProductCard key={producto.id} producto={producto} />
+                {familiasPaginadas.map((familia) => (
+                  <ProductCard 
+                    key={familia.id} 
+                    producto={familia} 
+                    onSelect={handleOpenFamily} 
+                  />
                 ))}
               </div>
 
@@ -381,12 +402,19 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
           ) : (
             <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
               <Package className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">No se encontraron productos</h3>
-              <p className="text-slate-500">Prueba buscando con otros términos o cambia la categoría.</p>
+              <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">No se encontraron familias</h3>
+              <p className="text-slate-500">Prueba cambiando la categoría o configurando familias en el POS.</p>
             </div>
           )}
         </div>
       )}
+
+      {/* Modal de Presentaciones de Familia (SIN IMÁGENES) */}
+      <FamilyDetailModal 
+        familia={selectedFamilyForModal}
+        isOpen={isFamilyModalOpen}
+        onClose={handleCloseFamilyModal}
+      />
 
     </div>
   );

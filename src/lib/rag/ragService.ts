@@ -151,32 +151,75 @@ export async function getProductosCollectionDocs(): Promise<ProductoDocData[]> {
 }
 
 /**
- * Enriquece una lista de productos con las presentaciones hijas si pertenecen a una familia
+ * Convierte una lista de productos coincidentes (sean hijos o familias)
+ * a su lista deduplicada de Familias Web con todas sus presentaciones hijas adjuntas.
  */
-export function enrichPresentaciones(prods: Producto[], allDocs: any[]): Producto[] {
-  const allProds = allDocs.map(d => {
+export function mapearAFamilias(prodsCoincidentes: Producto[], allDocs: any[]): Producto[] {
+  const allProds: Producto[] = allDocs.map(d => {
     const data = typeof d.data === 'function' ? d.data() : (d.data || d);
     return mapProducto(data, d.id || data.id);
   });
 
-  return prods.map(prod => {
-    if (prod.presentaciones && prod.presentaciones.length > 0) return prod;
-    const hijas = allProds.filter(p => p.productoPadreId === prod.id && p.disponible);
-    if (hijas.length > 0) {
+  const familiasMap = new Map<string, Producto>();
+  const allFamilias = allProds.filter(p => Boolean(p.esPrincipalWeb));
+
+  // Mapa de presentaciones por familia
+  const presentacionesPorFamilia = new Map<string, Producto[]>();
+  for (const prod of allProds) {
+    if (prod.productoPadreId) {
+      const list = presentacionesPorFamilia.get(prod.productoPadreId) || [];
+      list.push(prod);
+      presentacionesPorFamilia.set(prod.productoPadreId, list);
+    }
+  }
+
+  for (const p of prodsCoincidentes) {
+    let familiaObj: Producto | undefined;
+
+    if (p.esPrincipalWeb) {
+      familiaObj = p;
+    } else if (p.productoPadreId) {
+      familiaObj = allFamilias.find(f => f.id === p.productoPadreId);
+    } else {
+      const pNombre = p.nombre.toLowerCase();
+      familiaObj = allFamilias.find(f => pNombre.includes(f.nombre.toLowerCase()) || f.nombre.toLowerCase().includes(pNombre));
+    }
+
+    if (familiaObj && !familiasMap.has(familiaObj.id)) {
+      const hijas = presentacionesPorFamilia.get(familiaObj.id) || [];
+      
+      const extraerEtiqueta = (nombreHijo: string, nombrePadre: string, etiquetaDef?: string) => {
+        if (etiquetaDef && etiquetaDef.trim() !== '') return etiquetaDef.trim();
+        const regex = new RegExp(`^${nombrePadre}\\s*[-–:]?\\s*`, 'i');
+        const limpia = nombreHijo.replace(regex, '').trim();
+        return limpia.length > 0 ? limpia : nombreHijo;
+      };
+
       const presentaciones = hijas.map(h => ({
         id: h.id,
         codigoBarras: h.codigoBarras,
         nombre: h.nombre,
-        etiqueta: h.etiquetaVariante || h.nombre,
+        etiqueta: extraerEtiqueta(h.nombre, familiaObj!.nombre, h.etiquetaVariante),
         precio: h.precio,
         stock: h.stock ?? 0,
         disponible: h.disponible,
         unidadMedida: h.unidadMedida
-      }));
-      return { ...prod, presentaciones };
+      })).sort((a, b) => a.precio - b.precio || a.nombre.localeCompare(b.nombre));
+
+      const precios = presentaciones.map(pr => pr.precio).filter(pr => pr > 0);
+      const precioMin = precios.length > 0 ? Math.min(...precios) : familiaObj.precio;
+      const precioMax = precios.length > 0 ? Math.max(...precios) : familiaObj.precio;
+
+      familiasMap.set(familiaObj.id, {
+        ...familiaObj,
+        precio: precioMin,
+        precioMax: precioMax > precioMin ? precioMax : undefined,
+        presentaciones
+      });
     }
-    return prod;
-  });
+  }
+
+  return Array.from(familiasMap.values());
 }
 
 /**
@@ -482,7 +525,7 @@ export async function busquedaExacta(termino: string, maxResultados = 8): Promis
         const scoreTotal = scoreLexico + evalOnto.boost;
         return { prod, score: scoreTotal, tier: evalOnto.tier };
       })
-      .filter(item => item.prod.disponible && item.score > 0);
+      .filter(item => item.score > 0);
 
     productosConScore.sort((a, b) => {
       if (a.tier > 0 && b.tier > 0 && a.tier !== b.tier) return a.tier - b.tier;
@@ -491,7 +534,9 @@ export async function busquedaExacta(termino: string, maxResultados = 8): Promis
       return b.score - a.score;
     });
 
-    return productosConScore.slice(0, maxResultados).map(item => item.prod);
+    const matchingProds = productosConScore.slice(0, 15).map(item => item.prod);
+    const familias = mapearAFamilias(matchingProds, docsData);
+    return familias.slice(0, maxResultados);
   } catch (e) {
     console.error('[busquedaExacta] Error:', e);
     return [];
@@ -758,7 +803,7 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
         const scoreTotal = (evalOnto.boost * 2.0) + scoreLexico;
         return { producto, scoreTotal, tier: evalOnto.tier, scoreLexico };
       })
-      .filter(item => item.producto.disponible && item.scoreTotal > 0);
+      .filter(item => item.scoreTotal > 0);
 
     const hayTier1 = candidatosOnto.some(c => c.tier === 1);
     const hayMatchNombreFuerte = candidatosOnto.some(c => c.scoreLexico >= 10);
@@ -771,8 +816,8 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
         return b.scoreTotal - a.scoreTotal;
       });
 
-      const fastResultados = enrichPresentaciones(
-        candidatosOnto.slice(0, 8).map(item => item.producto),
+      const fastResultados = mapearAFamilias(
+        candidatosOnto.slice(0, 15).map(item => item.producto),
         docsData
       );
       _rerankCache.set(queryNorm, { resultados: fastResultados, ts: Date.now() });
@@ -804,7 +849,7 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
 
         return { producto, scoreTotal, tier: evalOnto.tier };
       })
-      .filter(item => item.producto.disponible && item.scoreTotal > 0);
+      .filter(item => item.scoreTotal > 0);
 
     candidatosVectoriales.sort((a, b) => {
       if (a.tier > 0 && b.tier > 0 && a.tier !== b.tier) return a.tier - b.tier;
@@ -813,14 +858,14 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
       return b.scoreTotal - a.scoreTotal;
     });
 
-    const finalResultados = enrichPresentaciones(
-      candidatosVectoriales.slice(0, 8).map(item => item.producto),
+    const finalResultados = mapearAFamilias(
+      candidatosVectoriales.slice(0, 15).map(item => item.producto),
       docsData
     );
 
     if (finalResultados.length === 0) {
       const exactos = await busquedaExacta(terminoLimpio);
-      return { productos: enrichPresentaciones(exactos, docsData), nivel: 1, latencyMs: Date.now() - inicio };
+      return { productos: exactos, nivel: 1, latencyMs: Date.now() - inicio };
     }
 
     _rerankCache.set(queryNorm, { resultados: finalResultados, ts: Date.now() });

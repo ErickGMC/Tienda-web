@@ -180,65 +180,63 @@ export const getProductosActivos = unstable_cache(
       const catalogoFinal: Producto[] = [];
 
       for (const prod of todosLosProductos) {
-        // Si este ítem fue agrupado como variante de otro padre, omitir tarjeta independiente
-        if (idsHijosAsignados.has(prod.id)) {
+        // En la tienda web SOLO se muestran las tarjetas que representan a las familias
+        if (!prod.esPrincipalWeb) {
           continue;
         }
 
         const variantesHijas = variantesPorPadre.get(prod.id) || [];
 
-        if (variantesHijas.length > 0) {
-          // Extraer o limpiar etiqueta de cada variante
-          const extraerEtiqueta = (nombreHijo: string, nombrePadre: string, etiquetaDef?: string) => {
-            if (etiquetaDef && etiquetaDef.trim() !== '') return etiquetaDef.trim();
-            const regex = new RegExp(`^${nombrePadre}\\s*[-–:]?\\s*`, 'i');
-            const limpia = nombreHijo.replace(regex, '').trim();
-            return limpia.length > 0 ? limpia : nombreHijo;
-          };
+        // Extraer o limpiar etiqueta de cada variante
+        const extraerEtiqueta = (nombreHijo: string, nombrePadre: string, etiquetaDef?: string) => {
+          if (etiquetaDef && etiquetaDef.trim() !== '') return etiquetaDef.trim();
+          const regex = new RegExp(`^${nombrePadre}\\s*[-–:]?\\s*`, 'i');
+          const limpia = nombreHijo.replace(regex, '').trim();
+          return limpia.length > 0 ? limpia : nombreHijo;
+        };
 
-          const presentaciones: PresentacionVariante[] = [];
+        const presentaciones: PresentacionVariante[] = [];
 
-          // Si el padre tiene su propio stock/precio y no está duplicado
-          if (prod.etiquetaVariante || (prod.precio > 0 && !variantesHijas.some(v => v.nombre === prod.nombre))) {
-            presentaciones.push({
-              id: prod.id,
-              codigoBarras: prod.codigoBarras,
-              nombre: prod.nombre,
-              etiqueta: prod.etiquetaVariante || 'Presentación Base',
-              precio: prod.precio,
-              stock: prod.stock ?? 0,
-              disponible: prod.disponible,
-              unidadMedida: prod.unidadMedida
-            });
-          }
-
-          for (const v of variantesHijas) {
-            presentaciones.push({
-              id: v.id,
-              codigoBarras: v.codigoBarras,
-              nombre: v.nombre,
-              etiqueta: extraerEtiqueta(v.nombre, prod.nombre, v.etiquetaVariante),
-              precio: v.precio,
-              stock: v.stock ?? 0,
-              disponible: v.disponible,
-              unidadMedida: v.unidadMedida
-            });
-          }
-
-          const precios = presentaciones.map(p => p.precio).filter(p => p > 0);
-          const precioMin = precios.length > 0 ? Math.min(...precios) : prod.precio;
-          const precioMax = precios.length > 0 ? Math.max(...precios) : prod.precio;
-
-          catalogoFinal.push({
-            ...prod,
-            precio: precioMin,
-            precioMax: precioMax > precioMin ? precioMax : undefined,
-            presentaciones
+        // Si el padre tiene su propia variante explícita
+        if (prod.etiquetaVariante) {
+          presentaciones.push({
+            id: prod.id,
+            codigoBarras: prod.codigoBarras,
+            nombre: prod.nombre,
+            etiqueta: prod.etiquetaVariante,
+            precio: prod.precio,
+            stock: prod.stock ?? 0,
+            disponible: prod.disponible,
+            unidadMedida: prod.unidadMedida
           });
-        } else {
-          // Producto individual sin variantes
-          catalogoFinal.push(prod);
         }
+
+        for (const v of variantesHijas) {
+          presentaciones.push({
+            id: v.id,
+            codigoBarras: v.codigoBarras,
+            nombre: v.nombre,
+            etiqueta: extraerEtiqueta(v.nombre, prod.nombre, v.etiquetaVariante),
+            precio: v.precio,
+            stock: v.stock ?? 0,
+            disponible: v.disponible,
+            unidadMedida: v.unidadMedida
+          });
+        }
+
+        // Ordenar presentaciones por precio de menor a mayor (o por nombre)
+        presentaciones.sort((a, b) => a.precio - b.precio || a.nombre.localeCompare(b.nombre));
+
+        const precios = presentaciones.map(p => p.precio).filter(p => p > 0);
+        const precioMin = precios.length > 0 ? Math.min(...precios) : prod.precio;
+        const precioMax = precios.length > 0 ? Math.max(...precios) : prod.precio;
+
+        catalogoFinal.push({
+          ...prod,
+          precio: precioMin,
+          precioMax: precioMax > precioMin ? precioMax : undefined,
+          presentaciones
+        });
       }
 
       return catalogoFinal;
