@@ -4,7 +4,11 @@ import { WebConfig, EmpresaConfig } from './actions'
 
 interface TiendaState {
   searchQuery: string;
+  activeSearchTerm: string;
   ragProductos: Producto[] | null;
+  searchNivel: 1 | 2 | null;
+  searchLatencyMs: number | null;
+  isSearching: boolean;
   selectedCategory: CategoriaProducto | 'Todas';
   consultaList: Producto[];
   showPrices: boolean;
@@ -15,6 +19,9 @@ interface TiendaState {
   toastMessage: string;
   isToastVisible: boolean;
   setSearchQuery: (query: string) => void;
+  setSearchInfo: (info: { term: string; productos: Producto[] | null; nivel?: 1 | 2 | null; latencyMs?: number | null }) => void;
+  setIsSearching: (isSearching: boolean) => void;
+  clearSearch: () => void;
   setRagProductos: (prods: Producto[] | null) => void;
   setSelectedCategory: (category: CategoriaProducto | 'Todas') => void;
   addToConsulta: (producto: Producto) => void;
@@ -30,7 +37,11 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useTiendaStore = create<TiendaState>((set) => ({
   searchQuery: '',
+  activeSearchTerm: '',
   ragProductos: null,
+  searchNivel: null,
+  searchLatencyMs: null,
+  isSearching: false,
   selectedCategory: 'Todas',
   consultaList: [],
   showPrices: false,
@@ -41,8 +52,29 @@ export const useTiendaStore = create<TiendaState>((set) => ({
   isToastVisible: false,
   setSearchQuery: (query) => set((state) => ({
     searchQuery: query,
+    // Si se limpia el input completamente, limpiar también la búsqueda activa
+    activeSearchTerm: query.trim() === '' ? '' : state.activeSearchTerm,
     ragProductos: query.trim() === '' ? null : state.ragProductos,
+    searchNivel: query.trim() === '' ? null : state.searchNivel,
+    searchLatencyMs: query.trim() === '' ? null : state.searchLatencyMs,
   })),
+  setSearchInfo: ({ term, productos, nivel = null, latencyMs = null }) => set({
+    activeSearchTerm: term,
+    searchQuery: term,
+    ragProductos: productos,
+    searchNivel: nivel,
+    searchLatencyMs: latencyMs,
+    isSearching: false
+  }),
+  setIsSearching: (isSearching) => set({ isSearching }),
+  clearSearch: () => set({
+    searchQuery: '',
+    activeSearchTerm: '',
+    ragProductos: null,
+    searchNivel: null,
+    searchLatencyMs: null,
+    isSearching: false
+  }),
   setRagProductos: (prods) => set({ ragProductos: prods }),
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   addToConsulta: (producto) => set((state) => {

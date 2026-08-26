@@ -151,6 +151,35 @@ export async function getProductosCollectionDocs(): Promise<ProductoDocData[]> {
 }
 
 /**
+ * Enriquece una lista de productos con las presentaciones hijas si pertenecen a una familia
+ */
+export function enrichPresentaciones(prods: Producto[], allDocs: any[]): Producto[] {
+  const allProds = allDocs.map(d => {
+    const data = typeof d.data === 'function' ? d.data() : (d.data || d);
+    return mapProducto(data, d.id || data.id);
+  });
+
+  return prods.map(prod => {
+    if (prod.presentaciones && prod.presentaciones.length > 0) return prod;
+    const hijas = allProds.filter(p => p.productoPadreId === prod.id && p.disponible);
+    if (hijas.length > 0) {
+      const presentaciones = hijas.map(h => ({
+        id: h.id,
+        codigoBarras: h.codigoBarras,
+        nombre: h.nombre,
+        etiqueta: h.etiquetaVariante || h.nombre,
+        precio: h.precio,
+        stock: h.stock ?? 0,
+        disponible: h.disponible,
+        unidadMedida: h.unidadMedida
+      }));
+      return { ...prod, presentaciones };
+    }
+    return prod;
+  });
+}
+
+/**
  * Invalida el caché de productos manualmente si es necesario.
  */
 export function invalidateProductosCache() {
@@ -742,7 +771,10 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
         return b.scoreTotal - a.scoreTotal;
       });
 
-      const fastResultados = candidatosOnto.slice(0, 8).map(item => item.producto);
+      const fastResultados = enrichPresentaciones(
+        candidatosOnto.slice(0, 8).map(item => item.producto),
+        docsData
+      );
       _rerankCache.set(queryNorm, { resultados: fastResultados, ts: Date.now() });
       return { productos: fastResultados, nivel: 2, latencyMs: Date.now() - inicio };
     }
@@ -781,11 +813,14 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
       return b.scoreTotal - a.scoreTotal;
     });
 
-    const finalResultados = candidatosVectoriales.slice(0, 8).map(item => item.producto);
+    const finalResultados = enrichPresentaciones(
+      candidatosVectoriales.slice(0, 8).map(item => item.producto),
+      docsData
+    );
 
     if (finalResultados.length === 0) {
       const exactos = await busquedaExacta(terminoLimpio);
-      return { productos: exactos, nivel: 1, latencyMs: Date.now() - inicio };
+      return { productos: enrichPresentaciones(exactos, docsData), nivel: 1, latencyMs: Date.now() - inicio };
     }
 
     _rerankCache.set(queryNorm, { resultados: finalResultados, ts: Date.now() });
