@@ -4,7 +4,7 @@ import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Producto, CategoriaProducto } from '@/types/producto';
 import { Banner, WebConfig, EmpresaConfig } from '@/lib/actions';
 import ProductCard from './ProductCard';
-import FamilyDetailModal from './FamilyDetailModal';
+import FamilyDetailDrawer from './FamilyDetailDrawer';
 import HeroCarousel from '@/components/ui/HeroCarousel';
 import { useTiendaStore } from '@/lib/store';
 import { ChevronLeft, ChevronRight, Sparkles, Clock, X, Package } from 'lucide-react';
@@ -247,7 +247,7 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
                 </h2>
                 {searchNivel === 2 ? (
                   <span className="px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-xs font-extrabold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-violet-500" /> Búsqueda Semántica IA
+                    <Sparkles className="w-3.5 h-3.5 text-violet-500" /> Búsqueda Inteligente
                   </span>
                 ) : (
                   <span className="px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
@@ -409,8 +409,8 @@ export default function TiendaCatalog({ productos, banners, config, empresa }: T
         </div>
       )}
 
-      {/* Modal de Presentaciones de Familia (SIN IMÁGENES) */}
-      <FamilyDetailModal 
+      {/* Drawer Lateral de Presentaciones de Familia (Alta Densidad) */}
+      <FamilyDetailDrawer 
         familia={selectedFamilyForModal}
         isOpen={isFamilyModalOpen}
         onClose={handleCloseFamilyModal}

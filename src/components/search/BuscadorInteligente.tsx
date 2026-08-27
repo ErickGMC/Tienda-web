@@ -181,17 +181,10 @@ export default function BuscadorInteligente({
         />
 
         <div className="relative flex items-center w-full bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200 dark:border-slate-800 p-1.5 pl-4 overflow-hidden">
-          {/* Símbolo de IA o Lupa */}
-          {iaHabilitada ? (
-            <div className="flex items-center gap-1 py-0.5 px-2 sm:px-2.5 rounded-full bg-violet-100 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-[10px] sm:text-[11px] font-extrabold flex-shrink-0 animate-fade-in">
-              <Sparkles className="w-3.5 h-3.5 text-violet-500 animate-pulse" />
-              <span>IA</span>
-            </div>
-          ) : (
-            <div className="text-slate-400 pr-1 sm:pr-2 flex-shrink-0">
-              <Search className="w-4 h-4" />
-            </div>
-          )}
+          {/* Icono de Búsqueda */}
+          <div className="text-slate-400 pr-1 sm:pr-2 flex-shrink-0">
+            <Search className="w-4 h-4 text-amber-500" />
+          </div>
 
           {/* Input de Búsqueda */}
           <input
@@ -200,11 +193,7 @@ export default function BuscadorInteligente({
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={
-              iaHabilitada
-                ? 'Describe lo que buscas con IA (presiona Buscar)...'
-                : 'Busca productos, abarrotes (presiona Buscar)...'
-            }
+            placeholder="Describe lo que buscas..."
             className="w-full py-1.5 sm:py-2 px-2 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none text-xs sm:text-sm min-w-0 font-medium"
             autoComplete="off"
           />
@@ -212,7 +201,7 @@ export default function BuscadorInteligente({
           {/* Botones de Acción */}
           <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 pl-1">
             {isSearching && (
-              <Loader2 className="w-4 h-4 text-violet-500 animate-spin mr-1" />
+              <Loader2 className="w-4 h-4 text-amber-500 animate-spin mr-1" />
             )}
 
             {inputValue && !isSearching && (
@@ -231,11 +220,7 @@ export default function BuscadorInteligente({
               type="button"
               onClick={() => realizarBusqueda(inputValue)}
               disabled={isSearching}
-              className={`p-1.5 sm:p-2 px-3 sm:px-3.5 rounded-full text-white font-bold text-xs flex items-center gap-1.5 justify-center transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 ${
-                iaHabilitada
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700'
-                  : 'bg-amber-500 hover:bg-amber-600'
-              }`}
+              className="p-1.5 sm:p-2 px-3 sm:px-3.5 rounded-full text-white font-bold text-xs flex items-center gap-1.5 justify-center transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/20"
               title="Buscar ahora"
             >
               <Search className="w-3.5 h-3.5" />
@@ -248,10 +233,10 @@ export default function BuscadorInteligente({
                 type="button"
                 onClick={onAbrirCombos}
                 className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-[11px] sm:text-xs font-bold rounded-full transition-all shadow-sm flex-shrink-0 cursor-pointer"
-                title="Crear combo con IA"
+                title="Crear combo automático"
               >
                 <Sparkles className="w-3.5 h-3.5 text-emerald-100" />
-                <span className="inline font-bold">Combo IA</span>
+                <span className="inline font-bold">Crear Combo</span>
               </button>
             )}
           </div>

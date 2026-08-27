@@ -1,20 +1,19 @@
-# TAREAS DE IMPLEMENTACIÓN - OPTIMIZACIÓN TIENDA WEB
+# TAREAS DE IMPLEMENTACIÓN - REDISEÑO DE VISUALIZADOR DE FAMILIAS
 
-## Fase 1: Caché de Backend y Optimización de Firestore
-- [x] Reemplazar lecturas masivas de Firestore por Caché (`unstable_cache`) en `src/lib/rag/ragService.ts`
-- [x] Actualizar `REVALIDATE_TIME` a 300s y optimizar `logAnalyticsEvent` en `src/lib/actions.ts`
+## Fase 1: Creación del Slide-over Drawer / Bottom Sheet de Alta Densidad
+- [x] Crear `src/components/productos/FamilyDetailDrawer.tsx` con arquitectura dual (Slide-over en escritorio y Bottom Sheet en móvil).
+- [x] Implementar micro-buscador en vivo dentro de la familia para familias con >4 presentaciones.
+- [x] Implementar filas ultra-compactas (densidad ~50px de altura por producto) con micro-acciones `+` y badge dinámico.
+- [x] Implementar sticky footer unificado con botón WhatsApp de consulta consolidada y acceso directo a lista.
 
-## Fase 2: Seguridad e Integridad de API Keys
-- [x] Eliminar fallback de `GEMINI_API_KEY` en `src/app/api/combos-ia/route.ts`
-- [x] Crear Rate Limiter en `src/lib/rateLimiter.ts` y aplicarlo a `/api/combos-ia` y `/api/search-ia`
+## Fase 2: Integración y Retrocompatibilidad
+- [x] Actualizar `src/components/productos/FamilyDetailModal.tsx` como wrapper retrocompatible.
+- [x] Integrar `FamilyDetailDrawer` en `src/components/productos/TiendaCatalog.tsx`.
 
-## Fase 3: Optimización de Assets y Core Web Vitals (LCP)
-- [x] Remover `unoptimized={true}` y optimizar `sizes` en `src/components/productos/ProductCard.tsx`
-- [x] Mejorar placeholder visual cuando el producto no tiene imagen
+## Fase 3: Auditoría y Verificación de Tipos
+- [x] Validar tipos TypeScript y ejecutar compilación (`npm run build` exitoso sin errores).
 
-## Fase 4: Potenciación de UX y Cotización por WhatsApp
-- [x] Mejorar `src/components/ui/WhatsAppFAB.tsx` con badge dinámico de lista y cotización masiva por WhatsApp
-
-## Fase 5: Auditoría, Build y Pruebas E2E
-- [x] Ejecutar compilación de verificación `npm run build`
-- [x] Iniciar servidor `npm run dev` y realizar prueba E2E con `browser_subagent`
+## Fase 4: Pruebas E2E con Browser Subagent
+- [x] Lanzar servidor Next.js local y probar navegación con `browser_subagent`.
+- [x] Probar apertura de familia, densidad visual de productos, adición a lista y consulta por WhatsApp en Desktop y Móvil.
+- [x] Capturar capturas de pantalla de validación y generar walkthrough.
