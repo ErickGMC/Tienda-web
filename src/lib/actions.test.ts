@@ -19,7 +19,7 @@ export const mapFirestoreBanner = (docData: any, id: string) => {
 };
 
 describe('Tienda-web actions.ts - Banner Mapping Unit Tests', () => {
-  it('debería tomar imagenLocal como fallback para imageUrl cuando el banner proviene de pos-android', () => {
+  it('debería tomar imagenLocal como fallback para imageUrl cuando el banner proviene de AE_POS', () => {
     const docData = {
       title: 'Descuento Abarrotes',
       imagenLocal: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...',
