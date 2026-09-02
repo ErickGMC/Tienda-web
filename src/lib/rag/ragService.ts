@@ -660,13 +660,22 @@ export function busquedaSemanticaConDocs(
 
 // ── Reranker Semántico Universal con Gemini AI ───────────────────────────────
 
-// Caché en memoria para búsquedas semánticas repetidas (TTL: 5 minutos)
+// Caché en memoria para búsquedas semánticas repetidas (TTL: 5 minutos, Max 200 entradas)
 interface RerankCacheItem {
   resultados: Producto[];
   ts: number;
 }
 const _rerankCache = new Map<string, RerankCacheItem>();
 const RERANK_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+const MAX_RERANK_CACHE_ENTRIES = 200;
+
+function setRerankCache(key: string, value: RerankCacheItem) {
+  if (_rerankCache.size >= MAX_RERANK_CACHE_ENTRIES) {
+    const oldestKey = _rerankCache.keys().next().value;
+    if (oldestKey) _rerankCache.delete(oldestKey);
+  }
+  _rerankCache.set(key, value);
+}
 
 /**
  * Reordena dinámicamente cualquier conjunto de productos candidatos evaluando la
@@ -754,7 +763,7 @@ Responde ÚNICAMENTE en JSON con este formato exacto:
       }
 
       const finalResults = ordenados.slice(0, 8);
-      _rerankCache.set(cacheKey, { resultados: finalResults, ts: now });
+      setRerankCache(cacheKey, { resultados: finalResults, ts: now });
       return finalResults;
     }
   } catch (err: any) {
@@ -820,7 +829,7 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
         candidatosOnto.slice(0, 15).map(item => item.producto),
         docsData
       );
-      _rerankCache.set(queryNorm, { resultados: fastResultados, ts: Date.now() });
+      setRerankCache(queryNorm, { resultados: fastResultados, ts: Date.now() });
       return { productos: fastResultados, nivel: 2, latencyMs: Date.now() - inicio };
     }
 
@@ -868,7 +877,7 @@ export async function buscar(termino: string, usarIA: boolean): Promise<SearchRe
       return { productos: exactos, nivel: 1, latencyMs: Date.now() - inicio };
     }
 
-    _rerankCache.set(queryNorm, { resultados: finalResultados, ts: Date.now() });
+    setRerankCache(queryNorm, { resultados: finalResultados, ts: Date.now() });
     return {
       productos: finalResultados,
       nivel: 2,
