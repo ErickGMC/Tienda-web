@@ -115,6 +115,8 @@ function construirTextoRAG(p: {
   unidadMedida?: string;
   disponible?: boolean;
   precio?: number;
+  etiquetaVariante?: string;
+  esPrincipalWeb?: boolean;
 }): string {
   const partes: string[] = [
     `Producto: ${p.nombre}`,
@@ -137,6 +139,14 @@ function construirTextoRAG(p: {
 
   if (p.unidadMedida && p.unidadMedida !== 'unidad') {
     partes.push(`Unidad: ${p.unidadMedida}`);
+  }
+
+  if (p.etiquetaVariante) {
+    partes.push(`Presentación / Variante: ${p.etiquetaVariante}`);
+  }
+
+  if (p.esPrincipalWeb) {
+    partes.push(`Familia de productos con múltiples presentaciones`);
   }
 
   partes.push(`Disponible: ${p.disponible !== false ? 'Sí' : 'No'}`);
@@ -167,7 +177,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 });
   }
 
-  const { productoId, nombre, descripcion, categoria, etiquetas, precio, unidadMedida, disponible } = body;
+  const { productoId, nombre, descripcion, categoria, etiquetas, precio, unidadMedida, disponible, etiquetaVariante, esPrincipalWeb } = body;
 
   if (!productoId || typeof productoId !== 'string') {
     return NextResponse.json({ error: 'productoId es requerido' }, { status: 400 });
@@ -177,7 +187,17 @@ export async function POST(request: Request) {
   }
 
   // 2. Construir texto RAG
-  const textoRAG = construirTextoRAG({ nombre, descripcion, categoria, etiquetas, precio, unidadMedida, disponible });
+  const textoRAG = construirTextoRAG({ 
+    nombre, 
+    descripcion, 
+    categoria, 
+    etiquetas, 
+    precio, 
+    unidadMedida, 
+    disponible, 
+    etiquetaVariante, 
+    esPrincipalWeb 
+  });
 
   // 3. Generar embedding con Gemini
   const apiKey = process.env.GEMINI_API_KEY;

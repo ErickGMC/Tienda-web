@@ -216,6 +216,21 @@ export function mapearAFamilias(prodsCoincidentes: Producto[], allDocs: any[]): 
         precioMax: precioMax > precioMin ? precioMax : undefined,
         presentaciones
       });
+    } else if (!familiaObj && !familiasMap.has(p.id)) {
+      // Producto unitario independiente (sin familia)
+      familiasMap.set(p.id, {
+        ...p,
+        presentaciones: [{
+          id: p.id,
+          codigoBarras: p.codigoBarras,
+          nombre: p.nombre,
+          etiqueta: p.etiquetaVariante || p.unidadMedida || 'Unidad',
+          precio: p.precio,
+          stock: p.stock ?? 0,
+          disponible: p.disponible,
+          unidadMedida: p.unidadMedida
+        }]
+      });
     }
   }
 

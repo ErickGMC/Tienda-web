@@ -109,11 +109,36 @@ export async function POST(request: Request) {
       )
       .join('\n');
 
+    const generarComboAlgoritmico = () => {
+      const topProds = productosRelevantes
+        .filter(p => p.disponible && (p.stock ?? 1) > 0)
+        .slice(0, 5);
+      
+      const productosCombo: ProductoCombo[] = topProds.map(prod => ({
+        id: prod.id,
+        nombre: prod.nombre,
+        precio: prod.precio,
+        cantidad: 1,
+        subtotal: prod.precio,
+        imagenUrl: prod.imagenUrl,
+        tier: 1
+      }));
+
+      const totalEstimado = productosCombo.reduce((acc, p) => acc + p.subtotal, 0);
+
+      return NextResponse.json({
+        titulo: `Combo: ${solicitudLimpia.slice(0, 25)}`,
+        descripcion: 'Seleccionamos los productos más recomendados y disponibles en bodega para tu pedido.',
+        productos: productosCombo,
+        totalEstimado: Math.round(totalEstimado * 100) / 100,
+      } as ComboResponse);
+    };
+
     // 4. Invocar Gemini (Modelo Principal con Respaldo Automático)
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error('[combos-ia] ❌ GEMINI_API_KEY no está configurada.');
-      return NextResponse.json({ error: 'Servicio de IA deshabilitado' }, { status: 500 });
+      console.warn('[combos-ia] ⚠️ GEMINI_API_KEY no está configurada. Usando fallback algorítmico.');
+      return generarComboAlgoritmico();
     }
     const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -172,8 +197,13 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
       result = await primaryModel.generateContent(prompt);
     } catch (err: any) {
       console.warn(`[combos-ia] ⚠️ Error con modelo principal (${primaryModelName}): ${err.message}. Reintentando con modelo de respaldo (${fallbackModelName})...`);
-      const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
-      result = await fallbackModel.generateContent(prompt);
+      try {
+        const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
+        result = await fallbackModel.generateContent(prompt);
+      } catch (fallbackErr: any) {
+        console.warn(`[combos-ia] ⚠️ Modelos LLM no disponibles. Aplicando fallback algorítmico: ${fallbackErr.message}`);
+        return generarComboAlgoritmico();
+      }
     }
 
     const rawText = result.response.text().trim();
@@ -186,7 +216,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin bloques
       llmResponse = JSON.parse(jsonStr);
     } catch {
       console.error('[combos-ia] Error parseando JSON del LLM:', jsonStr);
-      return NextResponse.json({ error: 'Error al procesar la respuesta de la IA' }, { status: 500 });
+      return generarComboAlgoritmico();
     }
 
     // 6. Mapear productos del LLM con datos reales de Firestore (Lookup ultra-resiliente por ID o Nombre)

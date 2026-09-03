@@ -99,7 +99,7 @@ function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Pro
     esPrincipalWeb: parseBool(data.esPrincipalWeb, false),
     productoPadreId: data.productoPadreId || undefined,
     etiquetaVariante: data.etiquetaVariante || undefined,
-    mostrarPrecioWeb: parseBool(data.mostrarPrecioWeb, false)
+    mostrarPrecioWeb: data.mostrarPrecioWeb !== undefined ? parseBool(data.mostrarPrecioWeb, true) : true
   };
 }
 
@@ -180,8 +180,27 @@ export const getProductosActivos = unstable_cache(
       const catalogoFinal: Producto[] = [];
 
       for (const prod of todosLosProductos) {
-        // En la tienda web SOLO se muestran las tarjetas que representan a las familias
+        // Las variantes hijas NUNCA se muestran como tarjetas sueltas (se muestran en su familia)
+        const esHijo = Boolean(prod.productoPadreId) || idsHijosAsignados.has(prod.id);
+        if (esHijo) {
+          continue;
+        }
+
+        // Producto unitario independiente (sin familia ni variantes)
         if (!prod.esPrincipalWeb) {
+          catalogoFinal.push({
+            ...prod,
+            presentaciones: [{
+              id: prod.id,
+              codigoBarras: prod.codigoBarras,
+              nombre: prod.nombre,
+              etiqueta: prod.etiquetaVariante || prod.unidadMedida || 'Unidad',
+              precio: prod.precio,
+              stock: prod.stock ?? 0,
+              disponible: prod.disponible,
+              unidadMedida: prod.unidadMedida
+            }]
+          });
           continue;
         }
 

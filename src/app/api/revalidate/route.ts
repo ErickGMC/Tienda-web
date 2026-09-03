@@ -15,6 +15,7 @@
 
 import { NextResponse } from 'next/server';
 import { revalidateTag, revalidatePath } from 'next/cache';
+import { invalidateProductosCache, invalidateIACache } from '@/lib/rag/ragService';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,14 @@ export async function POST(request: Request) {
     } catch (err: any) {
       console.warn('[revalidate] Error al revalidar path:', err.message);
     }
+  }
+
+  // 4. Invalidar cachés en memoria del motor RAG
+  if (tagsToRevalidate.includes('productos')) {
+    invalidateProductosCache();
+  }
+  if (tagsToRevalidate.includes('web_config')) {
+    invalidateIACache();
   }
 
   console.log(`[revalidate] ✅ Tags invalidados: ${revalidated.join(', ')}`);

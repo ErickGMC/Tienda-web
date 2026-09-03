@@ -76,7 +76,7 @@ export default function FamilyDetailDrawer({ familia, isOpen, onClose }: FamilyD
 
   if (!isOpen || !familia) return null;
 
-  const debeMostrarPrecio = Boolean(showPrices && familia.mostrarPrecioWeb === true);
+  const debeMostrarPrecio = Boolean(showPrices && (familia.mostrarPrecioWeb !== false));
 
   // Handler WhatsApp para una variante individual
   const handleConsultarWhatsappItem = (pres: PresentacionVariante, e?: React.MouseEvent) => {
