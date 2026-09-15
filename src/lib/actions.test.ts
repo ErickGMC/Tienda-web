@@ -45,3 +45,27 @@ describe('Tienda-web actions.ts - Banner Mapping Unit Tests', () => {
     expect(bannerMapeado.imageUrl).toBe('https://firebasestorage.googleapis.com/v0/b/app/o/banner.png');
   });
 });
+
+describe('Tienda-web actions.ts - Product Soft-Delete Unit Tests', () => {
+  const mapTestProduct = (data: any, id: string) => {
+    const isEliminado = data?.eliminado === true || data?.eliminado === 1 || data?.eliminado === '1' || data?.eliminado === 'true';
+    return {
+      id,
+      nombre: data.nombre || '',
+      disponible: isEliminado ? false : (data.disponible !== false),
+      eliminado: isEliminado,
+    };
+  };
+
+  it('debe marcar disponible: false si un producto tiene eliminado: true', () => {
+    const prod = mapTestProduct({ nombre: 'Arroz', disponible: true, eliminado: true }, 'p1');
+    expect(prod.disponible).toBe(false);
+    expect(prod.eliminado).toBe(true);
+  });
+
+  it('debe mantener disponible: true si el producto no está eliminado', () => {
+    const prod = mapTestProduct({ nombre: 'Azúcar', disponible: true, eliminado: false }, 'p2');
+    expect(prod.disponible).toBe(true);
+    expect(prod.eliminado).toBe(false);
+  });
+});

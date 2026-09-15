@@ -84,7 +84,6 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                     src={slide.imageUrl}
                     alt=""
                     fill
-                    unoptimized={true}
                     sizes="100vw"
                     className="object-cover object-center scale-125 blur-2xl brightness-50 opacity-90 saturate-150"
                   />
@@ -98,7 +97,6 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
                     src={slide.imageUrl}
                     alt={slide.title || 'Banner de promociones'}
                     fill
-                    unoptimized={true}
                     sizes="(max-width: 768px) 100vw, 1280px"
                     className="object-contain sm:object-cover object-center drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.01]"
                     priority={idx === 0}

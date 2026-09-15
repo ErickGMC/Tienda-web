@@ -12,6 +12,7 @@ export default function CartModal() {
     consultaList, 
     removeFromConsulta,
     clearConsulta,
+    showPrices,
     config, 
     empresa 
   } = useTiendaStore();
@@ -22,15 +23,25 @@ export default function CartModal() {
     if (consultaList.length === 0) return;
 
     const numero = config?.whatsapp || empresa?.telefono || "51970560023";
-    let mensaje = "Hola, me interesa consultar el precio y disponibilidad de estos productos:%0A%0A";
+    let mensaje = "Hola, me interesa consultar disponibilidad y realizar un pedido:%0A%0A";
+    let totalEstimado = 0;
     
     consultaList.forEach((p, index) => {
-      mensaje += `${index + 1}. ${p.nombre}%0A`;
+      const variante = p.etiquetaVariante ? ` (${p.etiquetaVariante})` : '';
+      const precioStr = showPrices && p.precio > 0 ? ` - S/ ${p.precio.toFixed(2)}` : '';
+      if (showPrices && p.precio > 0) {
+        totalEstimado += p.precio;
+      }
+      mensaje += `${index + 1}. *${encodeURIComponent(p.nombre)}*${encodeURIComponent(variante)}${precioStr}%0A`;
     });
+
+    if (showPrices && totalEstimado > 0) {
+      mensaje += `%0A*Total estimado:* S/ ${totalEstimado.toFixed(2)}%0A`;
+    }
+    mensaje += "%0A¿Me podrían confirmar disponibilidad? ¡Muchas gracias!";
     
     window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
     
-    // Opcional: Cerrar el modal después de enviar
     setCartModalOpen(false);
   };
 
@@ -87,7 +98,6 @@ export default function CartModal() {
                       fill 
                       sizes="64px"
                       className="object-cover" 
-                      unoptimized 
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-300">

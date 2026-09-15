@@ -3,8 +3,9 @@ import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp, DocumentSnap
 import { db } from './firebase/config';
 import { Producto, PresentacionVariante } from '@/types/producto';
 
-// Revalidar cada 30 segundos para actualización rápida de banners y catálogo
-const REVALIDATE_TIME = 30;
+// Revalidar cada 300 segundos (5 minutos) como fallback de fondo.
+// Los cambios del POS se reflejan al instante (< 2s) gracias al webhook /api/revalidate.
+const REVALIDATE_TIME = 300;
 
 export interface Banner {
   id: string;
@@ -83,6 +84,8 @@ function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Pro
     return defaultVal;
   };
 
+  const isEliminado = data?.eliminado === true || data?.eliminado === 1 || data?.eliminado === '1' || data?.eliminado === 'true';
+
   return {
     id: doc.id,
     codigoBarras: data.codigoBarras || '',
@@ -92,8 +95,8 @@ function mapFirestoreProduct(doc: DocumentSnapshot | QueryDocumentSnapshot): Pro
     precio: Number(data.precio) || 0,
     unidadMedida: data.unidadMedida || 'unidad',
     imagenUrl: data.imagenUrl || data.imageUrl || '',
-    disponible: parseBool(data.disponible, true),
-    destacado: parseBool(data.destacado, false),
+    disponible: isEliminado ? false : parseBool(data.disponible, true),
+    destacado: isEliminado ? false : parseBool(data.destacado, false),
     stock: data.stock !== undefined && data.stock !== null ? Number(data.stock) : undefined,
     etiquetas: etiquetasArr,
     esPrincipalWeb: parseBool(data.esPrincipalWeb, false),
@@ -128,6 +131,10 @@ export const getProductosActivos = unstable_cache(
       const todosLosProductos: Producto[] = [];
       for (const docSnap of snapshot.docs) {
         try {
+          const data = docSnap.data();
+          if (data?.eliminado === true || data?.eliminado === 1 || data?.eliminado === '1' || data?.eliminado === 'true') {
+            continue;
+          }
           const producto = mapFirestoreProduct(docSnap);
           if (producto.disponible) {
             todosLosProductos.push(producto);
@@ -275,6 +282,10 @@ export const getProductoById = unstable_cache(
       const docRef = doc(db, 'productos', id);
       const docSnap = await getDoc(docRef);
       if (!docSnap.exists()) {
+        return null;
+      }
+      const data = docSnap.data();
+      if (data?.eliminado === true || data?.eliminado === 1 || data?.eliminado === '1' || data?.eliminado === 'true') {
         return null;
       }
       return mapFirestoreProduct(docSnap);

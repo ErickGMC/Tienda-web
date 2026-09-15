@@ -103,12 +103,13 @@ function mapProducto(docData: any, id: string): Producto {
   } else if (typeof rest.etiquetas === 'object' && rest.etiquetas !== null) {
     etiquetas = Object.values(rest.etiquetas).filter(e => typeof e === 'string') as string[];
   }
+  const isEliminado = rest.eliminado === true || rest.eliminado === 1 || rest.eliminado === '1' || rest.eliminado === 'true';
   return {
     ...rest,
     id,
     etiquetas,
-    disponible: Boolean(rest.disponible === true || rest.disponible === 1 || rest.disponible === '1'),
-    destacado: Boolean(rest.destacado === true || rest.destacado === 1 || rest.destacado === '1'),
+    disponible: isEliminado ? false : Boolean(rest.disponible === true || rest.disponible === 1 || rest.disponible === '1'),
+    destacado: isEliminado ? false : Boolean(rest.destacado === true || rest.destacado === 1 || rest.destacado === '1'),
     precio: Number(rest.precio) || 0,
     stock: Number(rest.stock) || 0,
   } as Producto;
@@ -137,10 +138,15 @@ export async function getProductosCollectionDocs(): Promise<ProductoDocData[]> {
   }
   try {
     const snap = await getDocs(collection(db, 'productos'));
-    const result: ProductoDocData[] = snap.docs.map(d => ({
-      id: d.id,
-      data: d.data(),
-    }));
+    const result: ProductoDocData[] = snap.docs
+      .filter(d => {
+        const data = d.data();
+        return !(data?.eliminado === true || data?.eliminado === 1 || data?.eliminado === '1' || data?.eliminado === 'true');
+      })
+      .map(d => ({
+        id: d.id,
+        data: d.data(),
+      }));
     _productosCache = result;
     _productosCacheTs = now;
     return result;
